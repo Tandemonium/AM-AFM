@@ -1,0 +1,9 @@
+dtw-python
+joblib
+matplotlib
+numpy
+pandas
+scikit-learn
+scipy
+statsmodels
+tqdm

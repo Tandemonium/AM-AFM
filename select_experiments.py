@@ -2,9 +2,9 @@
 from amafm import selection
 
 
-DATA_DIR = 'experiments'
-num_files = -1
-start_at = 0  # 400
+DATA_DIR = '../experiments'  # path to directory containing experiment data
+num_files = -1               # number of files to load and preprocess
+start_at = 0                 # to skip a given number of files
 
 
 if __name__ == '__main__':

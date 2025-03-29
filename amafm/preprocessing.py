@@ -55,17 +55,6 @@ def separate_drive(drive: np.ndarray, turning_point: int) -> tuple[np.ndarray, n
     z_out = np.flip(z_out)
     return z_in, z_out
 
-"""
-def find_extrema_indices(signal_array: np.ndarray) -> tuple[list[int], list[int]]:
-    local_minima_indices = []
-    local_maxima_indices = []
-    for i in range(1, len(signal_array) - 1):
-        if signal_array[i] < signal_array[i - 1] and signal_array[i] < signal_array[i + 1]:
-            local_minima_indices.append(i)
-        elif signal_array[i] > signal_array[i - 1] and signal_array[i] > signal_array[i + 1]:
-            local_maxima_indices.append(i)
-    return local_minima_indices, local_maxima_indices
-"""
 
 def find_extrema_indices(signal_array: np.ndarray, n: int = 2) -> list[int]:
     idcs = []
@@ -120,13 +109,6 @@ def feature_x_align(z: np.ndarray, signal: np.ndarray,
         idx = idcs[i] + 1
         shift = z[idx]
     else:
-        """
-        min_idcs, max_idcs = find_extrema_indices(signal)
-        if n % 2 == 0:
-            min_idx, max_idx = min_idcs[n], max_idcs[n + 1]
-        else:
-            min_idx, max_idx = max_idcs[n - 1], min_idcs[n]
-        """
         idcs = find_extrema_indices(signal, n)
         n = min(n, len(idcs) - 1)
         if n < 1:
@@ -206,9 +188,73 @@ def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: l
                smooth_func: Callable[..., np.ndarray|tuple[np.ndarray]] = denoise.savgol, 
                smooth_kwargs: dict[str, Any] = {'w': 50, 'p': 3}, 
                yalign: Literal['mean', 'median']|None = 'median', 
-               xalign: Literal['increase', 'decrease', 'extrema', 'sym', 'rj']|None = 'maximum', 
+               xalign: Literal['increase', 'decrease', 'extrema', 'maximum', 'minimum', 'sym', 'rj']|None = 'maximum', 
                xalign_guide_type: Literal['amp', 'phase'] = 'amp', 
                xalign_n: int = 1, xalign_guide_idx: int|None = None) -> tuple[list[Measurement], dict[str, float]]:
+    """
+    Preprocess am-afm measurements from .ibw files.
+    * load data from igor-binarywave files
+    * smooth measurements to reduce noise
+    * scale measurements using min-max-scaling
+    * align measurements on x- and y-axis
+    * store the data in `Measurement`-objects containing distance-, amplitude- and phase-data  
+      for approach and retraction of an experiment.
+    
+    Parameters
+    ----------
+    data_dir : str
+        Path of the directory containing the data in .ibw-format.
+    num_files : int, optional
+        Number of files to load. -1 to load all files, by default -1
+    start_at : int, optional
+        Number of files in alphabetical order to skip, by default 0
+    folders : list[str] | None, optional
+        List of names of subfolders in the data directory. Only load files from given folders, by default None
+    files : list[str | Path] | None, optional
+        Restrict to certain filenames from which to load, by default None
+    far_probe_avrg_tol : int, optional
+        by default 100
+    scale : bool, optional
+        Set to `True` to min-max-scale amplitude- and phase-data, by default True
+    smooth : bool, optional
+        Set to `True` to smooth amplitude- and phase-data to reduce noise, by default True
+    reduce_length : int, optional
+        Reduce curves to a given length by interpolating using cubic bsplines. Set >=1 to apply, by default -1
+    smooth_func : Callable[..., np.ndarray | tuple[np.ndarray]], optional
+        The function which applys smoothing on each curve. See `amafm.denoise`-module for available functions  
+        by default denoise.savgol
+    smooth_kwargs : _type_, optional
+        Keyword arguments to pass to the smoothing-function, by default {'w': 50, 'p': 3}
+    yalign : Literal[&#39;mean&#39;, &#39;median&#39;] | None, optional
+        Method for aligning the curves on the y-axis.  
+        Either aligning them to the `mean`or `median` of all curves of the same measurement-type.  
+        by default 'median'
+    xalign : Literal[&#39;increase&#39;, &#39;decrease&#39;, &#39;extrema&#39;, &#39;maximum&#39;, 
+                     &#39;minimum&#39;, &#39;sym&#39;, &#39;rj&#39;] | None, optional
+        Method for aligning the curves on the x-axis.   
+        * `increase` for aligning to the maximum derivative,
+        * `decrease` for aligning to the minimum derivative,
+        * `extrema` for aligning to the mid-point between local neighboring minimum and maximum,
+        * `maximum` for aligning to the `n`-th local maximum,
+        * `minimum` for aligning to the `n`-th local minimum,
+        * `sym` for using the symmetric step pattern of the DTW-algorithm,
+        * `rj` for using the Rabiner-Juang step pattern of the DTW-algorithm.
+        by default 'maximum'
+    xalign_guide_type : Literal[&#39;amp&#39;, &#39;phase&#39;], optional
+        Not used for DTW x-alignment. The curve-type to base the x-alignment on.  
+        Either `amp` for the amplitude or `phase`for the phase, by default 'amp'
+    xalign_n : int, optional
+        Only used for `xalign`-types `extrema`, `maximum` and `minimum`.  
+        Chooses the `n`-th (0-based) identified feature along the x-axis to align at, by default 1
+    xalign_guide_idx : int | None, optional
+        Only used for DTW x-alignment. The index of loaded measurements on which the x-alignment is based, by default None
+
+    Returns
+    -------
+    tuple[list[Measurement], dict[str, float]]
+        Return a list of preprocessed `Measurement`-objects and a dictionary containing calibration parameters.
+    """
+
     # load data and cailbration parameters
     if files is None:
         files = data_loading.get_ibw_paths(data_dir, calib_only=False, n=num_files, folders=folders)

@@ -62,8 +62,8 @@ def get_average_uncertainty(binned_amp_curves: np.ndarray, binned_phase_curves: 
     phase_bins = [np.concatenate(bins) for bins in binned_phase_curves]
     amps_at_zscore, phases_at_zscore = [], []
     for zscore in zscores:
-        a_at_zs = [(zscore * bin.std()) + bin.mean() for bin in amp_bins]
-        p_at_zs = [(zscore * bin.std()) + bin.mean() for bin in phase_bins]
+        a_at_zs = np.array([(zscore * bin.std()) + bin.mean() for bin in amp_bins])
+        p_at_zs = np.array([(zscore * bin.std()) + bin.mean() for bin in phase_bins])
         amps_at_zscore.append(a_at_zs)
         phases_at_zscore.append(p_at_zs)
     return amps_at_zscore, phases_at_zscore

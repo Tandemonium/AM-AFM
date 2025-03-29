@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any, Literal
 
 import matplotlib.pyplot as plt
@@ -15,6 +16,7 @@ def get_color(i: int) -> str:
 
 
 def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: float = 0.1):
+    """Simply create a plot showing all given measurements."""
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
     labels = ['phase approach', 'phase retract', 'amplitude approach', 'amplitude retract']
     for i, (signal_type, z_type) in enumerate(zip(Measurement.signal_types(), 
@@ -31,6 +33,7 @@ def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: 
 
 
 def compare_directions(measurement: Measurement):
+    """Plot comparison of approach and retract curves from the given measurement."""
     fig, axs = plt.subplots(2, 1, figsize=(8, 4))
     axs[0].plot(measurement.z_out, measurement.phase_out, label='retract', alpha=0.5)
     axs[0].plot(measurement.z_in, measurement.phase_in, color='r', label='approach', alpha=0.5)
@@ -49,6 +52,7 @@ def compare_directions(measurement: Measurement):
 def compare_raw_and_processed(measurements: list[Measurement], measurements_raw: list[Measurement],
                               signal_type: Literal['amp', 'phase'] = 'amp', direction: Literal['in', 'out'] = 'out',
                               columns: int = 4, rows: int = 7, col_width: int = 5, row_height: int = 2):
+    """Plot comparison of raw and processed measurements in a grid."""
     z_name, signal_name = f'z_{direction}', f'{signal_type}_{direction}'
     fig, axs = plt.subplots(rows, columns, figsize=(columns * col_width, rows * row_height))
     for i in range(rows * columns):
@@ -65,6 +69,7 @@ def compare_raw_and_processed(measurements: list[Measurement], measurements_raw:
 def compare_smoothing(measurement_raw: Measurement, smoothing_methods: list[dict[str, Any]],
                       signal_type: Literal['amp', 'phase'] = 'amp', 
                       direction: Literal['in', 'out'] = 'out'):
+    """Plot compare a curve with different smoothing methods applied."""
     y = measurement_raw[f'{signal_type}_{direction}']
     z = measurement_raw[f'z_{direction}']
     n_plots = len(smoothing_methods)
@@ -85,6 +90,7 @@ def compare_smoothing(measurement_raw: Measurement, smoothing_methods: list[dict
 def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str, float], 
                         scaled: bool = True, signal_type: Literal['amp', 'phase'] = 'amp', 
                         direction: Literal['in', 'out'] = 'out', alpha: float = 0.5):
+    """Plot comparison of y-aligned curve with original curve."""
     st, zt = f'{signal_type}_{direction}', f'z_{direction}'
     signal = [m[st] for m in measurements]
     far_param = 0 if scaled else calib_params[f'{signal_type}_far']
@@ -111,6 +117,7 @@ def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str,
 def plot_compare_feature_xalign(measurements: list[Measurement], 
                                 signal_type: Literal['amp', 'phase'] = 'amp', 
                                 direction: Literal['in', 'out'] = 'out'):
+    """Plot compare a curve with different x-alignment methods applied."""
     feature_types = ['extrema', 'increase', 'decrease', 'maximum', 'minimum']
     ns = [2, None, None, 1, 1]
     labels = ['unaligned'] + feature_types
@@ -134,6 +141,7 @@ def plot_compare_feature_xalign(measurements: list[Measurement],
 def plot_compare_dtw_xalign(measurements: list[Measurement], lead_curve_idx: int,
                             signal_type: Literal['amp', 'phase'] = 'amp', 
                             direction: Literal['in', 'out'] = 'out', alpha: float = 0.5):
+    """Plot comparison of original curve with curve with dtw-algorithm x-alignment applied."""
     m_lead = measurements[lead_curve_idx]
     st, zt = f'{signal_type}_{direction}', f'z_{direction}'
     step_patterns = ['rj', 'sym']
@@ -157,6 +165,8 @@ def plot_smallest_largest_distance(distances: np.ndarray, measurements: list[Mea
                                    ideal_measurement: Measurement, n: int = 3, 
                                    signal_type: Literal['amp', 'phase'] = 'amp', 
                                    direction: Literal['in', 'out'] = 'out'):
+    """Plot the cumulative frquency of curve distances to a given ideal curve plus  
+       the `n` curves with smallest and largest distance to the ideal curve."""
     st = f'{signal_type}_{direction}'
     ideal_signal = ideal_measurement[st]
 
@@ -192,6 +202,7 @@ def plot_smallest_largest_distance(distances: np.ndarray, measurements: list[Mea
 def plot_averaging(avrg_measurement: Measurement, measurements: list[Measurement],
                    signal_type: Literal['amp', 'phase'] = 'amp', 
                    direction: Literal['in', 'out'] = 'out', cutoff: int = None, figsize: tuple[int, int] = (8, 3)):
+    """Plot the given curve-type from all measurements and the average curve."""
     r = slice(cutoff)
     plt.figure(figsize=figsize)
     for m in measurements:
@@ -200,10 +211,12 @@ def plot_averaging(avrg_measurement: Measurement, measurements: list[Measurement
     plt.show()
 
 
-def plot_average_with_uncertainty(avrg_measurement, zscore_measurements: list[Measurement],
-                                  zscores: list[float], signal_type: Literal['amp', 'phase'] = 'amp', 
-                                  direction: Literal['in', 'out'] = 'out', cutoff: int = None,
-                                  figsize: tuple[int, int] = (8, 6)):
+def plot_with_uncertainty(main_curve: Measurement|tuple[np.ndarray, np.ndarray], 
+                          zscore_data: list[Measurement]|list[tuple[np.ndarray, np.ndarray]],
+                          zscores: list[float], get_x_y_func: Callable[..., tuple[np.ndarray, np.ndarray]],
+                          cutoff: int,
+                          figsize: tuple[int, int]):
+    """Plot a curve with uncertainty bands based on given z-scores."""
     r = slice(cutoff)
     zscores = np.array(zscores)
     zrange = np.unique(np.abs(zscores))[::-1]
@@ -220,10 +233,27 @@ def plot_average_with_uncertainty(avrg_measurement, zscore_measurements: list[Me
     for i, idcs in enumerate(grouped_idcs):
         for ii, idx in enumerate(idcs):
             label = f'$\\pm{abs(zscores[idx])}\\sigma$' if ii == 0 else None
-            plt.plot(zscore_measurements[idx][f'z_{direction}'][r], 
-                     zscore_measurements[idx][f'{signal_type}_{direction}'][r], 
-                     color='tab:orange', alpha=alphas[i], label=label)
-    plt.plot(avrg_measurement[f'z_{direction}'][r], 
-             avrg_measurement[f'{signal_type}_{direction}'][r], color='b', label='mean')
+            x, y = get_x_y_func(zscore_data[idx])
+            plt.plot(x[r], y[r], color='tab:orange', alpha=alphas[i], label=label)
+    x, y = get_x_y_func(main_curve)
+    plt.plot(x[r], y[r], color='b', label='mean')
     plt.legend()
     plt.show()
+
+
+def plot_average_with_uncertainty(avrg_measurement: Measurement, zscore_measurements: list[Measurement],
+                                  zscores: list[float], signal_type: Literal['amp', 'phase'] = 'amp', 
+                                  direction: Literal['in', 'out'] = 'out', cutoff: int = None,
+                                  figsize: tuple[int, int] = (8, 6)):
+    """Plot a curve from an average measurement with uncertainty bands based on given z-scores."""
+    get_x_y_func = lambda m: (m[f'z_{direction}'], m[f'{signal_type}_{direction}'])
+    plot_with_uncertainty(avrg_measurement, zscore_measurements, zscores, get_x_y_func, cutoff, figsize)
+
+
+def plot_force_with_uncertainty(force: tuple[np.ndarray, np.ndarray], 
+                                zscore_forces: list[tuple[np.ndarray, np.ndarray]],
+                                zscores: list[float], cutoff: int = None,
+                                figsize: tuple[int, int] = (8, 6)):
+    """Plot a force curve with uncertainty bands based on given z-scores."""
+    get_x_y_func = lambda x: (x[0], x[1])
+    plot_with_uncertainty(force, zscore_forces, zscores, get_x_y_func, cutoff, figsize)

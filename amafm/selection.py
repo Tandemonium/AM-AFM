@@ -33,20 +33,20 @@ def sort_curves_by_distance(measurements: list[Measurement], ideal_curve_idx: in
 
 
 def load_preprocess(data_dir: str, start_at: int = 0, num_files: int = -1, 
-                    files: list[str]|None = None) -> tuple[list[Measurement], dict[str, float]]:
-    return preprocessing.preprocess(data_dir, start_at=start_at, num_files=num_files, files=files)
+                    files: list[str]|None = None, folders: list[str]|None = None) -> tuple[list[Measurement], dict[str, float]]:
+    return preprocessing.preprocess(data_dir, start_at=start_at, num_files=num_files, files=files, folders=folders)
 
 
 class Index(object):
     colors = [['tab:blue', 'tab:red'], ['tab:green', 'tab:pink']]
 
-    def __init__(self, data_dir: str, axs, start_at: int = 0, num_files: int = -1):
+    def __init__(self, data_dir: str, axs, start_at: int = 0, num_files: int = -1, folders: list[str]|None = None):
         super().__init__()
         self.idx = -1
         self.axs = axs
         self.start_at = start_at
         self.chosen = []
-        self.measurements: list[Measurement] = load_preprocess(data_dir, start_at, num_files)[0]
+        self.measurements: list[Measurement] = load_preprocess(data_dir, start_at, num_files, folders)[0]
         self.f_count = len(self.measurements)
         print(f'Loaded {self.f_count} measurement(s).')
 
@@ -100,13 +100,13 @@ class Index(object):
             pickle.dump(self.chosen, f)
 
 
-def gui_select_experiments(data_dir: str, start_at: int = 0, num_files: int = -1):
+def gui_select_experiments(data_dir: str, start_at: int = 0, num_files: int = -1, folders: list[str]|None = None):
     plt.rcParams['font.family'] = 'monospace'
 
     fig, axs = plt.subplots(2, 2, figsize=(15, 5))
     plt.subplots_adjust(bottom=0.2)
 
-    callback = Index(data_dir, axs, start_at, num_files)
+    callback = Index(data_dir, axs, start_at, num_files, folders)
     axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
     axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
     bnext = Button(axnext, 'Take')

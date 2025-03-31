@@ -1,9 +1,14 @@
 # AM-AFM
 Toolbox for AM-AFM experiment data processing and force reconstruction.
 
+for Python 3.12
+
 
 ## Requirements
-see `amafm/setup/requirements.txt`
+install fro requirements-file:
+```shell
+pip install -r amafm/setup/requirements.txt
+```
 
 
 ## Usage

@@ -46,7 +46,7 @@ class Index(object):
         self.axs = axs
         self.start_at = start_at
         self.chosen = []
-        self.measurements: list[Measurement] = load_preprocess(data_dir, start_at, num_files, folders)[0]
+        self.measurements: list[Measurement] = load_preprocess(data_dir, start_at, num_files, None, folders)[0]
         self.f_count = len(self.measurements)
         print(f'Loaded {self.f_count} measurement(s).')
 
@@ -96,6 +96,7 @@ class Index(object):
     
     def on_close(self, event):
         print('chosen file-indices:', self.chosen)
+        # TODO: return file-paths
         with open(f'{SELECTED_IDCS_NAME}_{self.start_at}-{self.start_at + self.idx - 1}.pkl', 'wb') as f:
             pickle.dump(self.chosen, f)
 

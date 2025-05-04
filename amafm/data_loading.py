@@ -51,11 +51,10 @@ class Measurement:
         return False
 
 
-def get_ibw_paths(data_dir: str, folder: str, n_files: int = -1) -> list[Path]:
-    p = Path(data_dir).resolve() / folder
+def get_ibw_paths(directory: Path, n_files: int = -1) -> list[Path]:
     count = 0
     files = []
-    for f in p.iterdir():
+    for f in directory.iterdir():
         if n_files >= 1 and count >= n_files:
             break
         if f.is_file() and f.suffix == '.ibw':
@@ -135,13 +134,14 @@ def retrieve_signals(file: Path) -> Measurement:
 def load_data(data_dir: str, folder: str|None = None, files: list[str|Path]|None = None, n_files: int = -1, 
               far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
     assert folder or files, "Either folder or files must be provided."
+    data_dir: Path = Path(data_dir).resolve()
     if files is None:
-        files = get_ibw_paths(data_dir, folder, n_files)
+        files = get_ibw_paths(data_dir / folder, n_files)
     else:
         files = [Path(f) for f in files]
     if not folder:
         folder =files[0].parent.name
-    calib_files = get_ibw_paths(data_dir, folder + '_calib')
+    calib_files = get_ibw_paths(Path(data_dir.as_posix() + '_calib'))
     calib_params = calibration.get_calibration_parameters(files=calib_files, far_probe_avrg_tol=far_probe_avrg_tol)
 
     # retrieve separate signals from files

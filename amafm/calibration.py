@@ -39,7 +39,10 @@ def get_calibration_parameters(data_dir: str|None = None, num_files: int = -1, f
     """
     if files is None:
         print("Calibration: Read ibw-files and get calibration parameters ...")
-        files = data_loading.get_ibw_paths(data_dir, calib_only=True, n=num_files, folders=folders)
+        files = []
+        directory = Path(data_dir).resolve()
+        for folder in folders:
+            files += data_loading.get_ibw_paths(directory / folder, n=num_files)
 
     param_data = []
     for cf in files:

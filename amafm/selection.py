@@ -40,16 +40,16 @@ def sort_curves_by_distance(measurements: list[Measurement], ideal_curve_idx: in
 class Index(object):
     COLORS = [['tab:blue', 'tab:red'], ['tab:green', 'tab:pink']]
 
-    def __init__(self, data_dir: str, folder: str, axs, target: int = 100, n_files: int = -1, revise: bool = False):
+    def __init__(self, data_dir: str, axs, target: int = 100, n_files: int = -1, revise: bool = False):
         super().__init__()
         self.axs = axs
-        self.dir = Path(data_dir).resolve() / folder
+        self.dir = Path(data_dir).resolve()
         self.target = target
         self.revise = revise
         self.n_accepted = 0
 
         # load previously stored scrrening results:
-        files = data_loading.get_ibw_paths(data_dir, folder, n_files)
+        files = data_loading.get_ibw_paths(self.dir, n_files)
         if (self.dir / SAVE_NAME).exists():
             self.df = load_screening_results(self.dir)
             self.n_accepted = len(self.df[self.df['accept']])
@@ -150,13 +150,13 @@ class Index(object):
         self.df.to_csv(self.dir / SAVE_NAME, index=False)
 
 
-def gui_select_experiments(data_dir: str, folder: str, target: int = 100, n_files: int = -1, revise: bool = False):
+def gui_select_experiments(data_dir: str, target: int = 100, n_files: int = -1, revise: bool = False):
     plt.rcParams['font.family'] = 'monospace'
 
     fig, axs = plt.subplots(2, 2, figsize=(15, 5))
     plt.subplots_adjust(bottom=0.2)
 
-    callback = Index(data_dir, folder, axs, target, n_files, revise)
+    callback = Index(data_dir, axs, target, n_files, revise)
     axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
     axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
     bnext = Button(axnext, 'Accept')

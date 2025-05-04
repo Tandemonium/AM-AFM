@@ -1,6 +1,6 @@
 # select good curves from preprocessed data
 # usage:
-# python select_experiments.py <data_dir> <folder> [-t <target>] [-n <n_files>] [-r <revise>]
+# python select_experiments.py <data_dir> [-t <target>] [-n <n_files>] [-r <revise>]
 
 import argparse
 from amafm import selection
@@ -9,9 +9,7 @@ from amafm import selection
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Screen experiments and accept or reject curves as target data.")
     parser.add_argument('data_dir', type=str,
-                        help="Path to directory containing experiment folders.")
-    parser.add_argument('folder', type=str,
-                        help="Experiment-subfolder containing the `.ibw`-files to load.")
+                        help="Path to directory containing experiment `.ibw`-files to load.")
     parser.add_argument('-t', '--target', type=int, default=100,
                         help="Target number of accepted curves (default: 100).")
     parser.add_argument('-n', '--n_files', type=int, default=-1,
@@ -27,8 +25,7 @@ def parse_arguments():
 if __name__ == '__main__':
     args = parse_arguments()
     data_dir = args.data_dir
-    folder = args.folder
     target = args.target
     n_files = args.n_files
     revise = bool(args.revise)
-    selection.gui_select_experiments(data_dir, folder, target, n_files, revise)
+    selection.gui_select_experiments(data_dir, target, n_files, revise)

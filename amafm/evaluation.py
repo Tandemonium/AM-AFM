@@ -1,11 +1,15 @@
-from typing import Any
+from typing import Any, Callable, Literal
 
+import dtw
 import numpy as np
 import pandas as pd
 
+from scipy import spatial
 from sklearn import metrics
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm, trange
 
-from . import analysis, preprocessing
+from . import analysis, data_loading, ml, preprocessing, selection
 from .preprocessing import Measurement
 
 
@@ -31,7 +35,7 @@ def _smooth_all(measurements: list[Measurement], smooth_func: callable,
         for signal_type in signal_types:
             c = smooth_func(m[signal_type], **smooth_kwargs)
             new_data.append(c)
-        new_measurements.append(Measurement(*new_data))
+        new_measurements.append(Measurement(*new_data, m.file_path))
     return new_measurements
 
 
@@ -133,3 +137,83 @@ def evaluate_averaging(data_dir: str, preprocessing_kwargs: dict[str, Any],
         res = evaluate_curve_average(avrg_measurement)
         results.loc[len(results)] = [config, res]
     return results.sort_values('accuracy', ascending=False)
+
+
+class ClassificationByDistance:
+    def __init__(self, data_dir: str, folders: list[str], test_size: float = 0.25, 
+                 signal_type: Literal['phase', 'amp'] = 'phase', direction: Literal['in', 'out'] = 'out'):
+        self.test_size = test_size
+
+        # load filepaths and data
+        df, measurements = ml.load_dataset(data_dir, folders)
+
+        # add z-arrays to dataframe
+        df['z'] = [m[f'z_{direction}'] for m in measurements]
+
+        # separate accept-status to balance splits
+        self.df_accepted = df[df.accept]
+        self.df_rejected = df[~df.accept]
+    
+    def evaluate_classification(self, name: str, distance_func: Callable[[pd.DataFrame, pd.Series], int], 
+                                k: int = 40):
+        # k-fold cross validation
+        accuracies = []
+        for i in trange(k, desc='Validation cycle'):
+            f_train, f_test = ml.train_test_split(self.df_accepted, self.df_rejected, self.test_size, seed=i * 2)
+
+            # find closest train-item for each test-item
+            total = len(f_test)
+            n_correct = 0
+            for _, test_row in tqdm(f_test.iterrows(), desc='Compute distances', leave=False, total=len(f_test)):
+                n_correct += distance_func(f_train, test_row)
+            accuracies.append(n_correct / total)
+        print(f"Mean accuracy ({name}): {sum(accuracies) / k:.2%}")
+    
+    # predict by minimum distance
+    def dist_min_norm(self, df_train: pd.DataFrame, test_row: pd.Series) -> int:
+        distances = df_train['curve'].apply(lambda array: np.linalg.norm(test_row.curve - array))
+        pred = df_train.loc[distances.idxmin()].accept
+        return 1 if pred == test_row.accept else 0
+
+    # predict by lowest mean distance
+    def dist_mean_norm(self, df_train: pd.DataFrame, test_row: pd.Series) -> int:
+        distances = df_train['curve'].apply(lambda array: np.linalg.norm(test_row.curve - array))
+        acc_dist = distances[df_train.accept].mean()
+        rej_dist = distances[~df_train.accept].mean()
+        pred = True if acc_dist < rej_dist else False
+        return 1 if pred == test_row.accept else 0
+
+    # predict by correlation coefficient
+    def dist_correlation(self, df_train: pd.DataFrame, test_row: pd.Series) -> int:
+        corrs = df_train['curve'].apply(lambda array: np.corrcoef(test_row.curve[:100], array[:100])[0, 1])
+        pred = df_train.loc[corrs.idxmax()].accept
+        return 1 if pred == test_row.accept else 0
+
+    # predict using dtw
+    def dist_dtw(self, df_train: pd.DataFrame, test_row: pd.Series) -> int:
+        distances = df_train['curve'].apply(lambda array: dtw.dtw(test_row.curve[:100], array[:100]).distance)
+        pred = df_train.loc[distances.idxmin()].accept
+        return 1 if pred == test_row.accept else 0
+
+    # predict by procrustes distance
+    def dist_procrustes(self, df_train: pd.DataFrame, test_row: pd.Series) -> int:
+        disparities = df_train[['curve', 'z']].apply(lambda array: 
+                                                    spatial.procrustes(np.stack([test_row.curve, test_row.z])[:, :100], 
+                                                                        np.stack(array)[:, :100])[2], axis=1)
+        pred = df_train.loc[disparities.idxmin()].accept
+        return 1 if pred == test_row.accept else 0
+    
+    def by_min_norm(self, k: int = 40):
+        self.evaluate_classification('min norm', self.dist_min_norm, k=k)
+
+    def by_mean_norm(self, k: int = 40):
+        self.evaluate_classification('mean norm', self.dist_mean_norm, k=k)
+
+    def by_correlation(self, k: int = 40):
+        self.evaluate_classification('correlation', self.dist_correlation, k=k)
+
+    def by_dtw(self, k: int = 40):
+        self.evaluate_classification('dtw', self.dist_dtw, k=k)
+
+    def by_procrustes(self, k: int = 40):
+        self.evaluate_classification('procrustes', self.dist_procrustes, k=k)

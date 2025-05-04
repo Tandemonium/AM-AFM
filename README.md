@@ -5,7 +5,7 @@ for Python 3.12
 
 
 ## Requirements
-install fro requirements-file:
+install from requirements-file:
 ```shell
 pip install -r amafm/setup/requirements.txt
 ```

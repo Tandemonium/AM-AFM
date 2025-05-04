@@ -32,8 +32,9 @@ def reduce_curve(signal_x: np.ndarray, signal_y: np.ndarray, target_length: int)
         f'Target length {target_length} is larger than signal length {len(signal_x)}'
     
     from scipy.interpolate import CubicSpline
-    spline = CubicSpline(signal_x, signal_y)
-    newx = np.linspace(signal_x.min(), signal_y.max(), target_length)
+    x = np.unique(np.sort(signal_x))
+    spline = CubicSpline(x, signal_y[:len(x)])
+    newx = np.linspace(signal_x.min(), signal_x.max(), target_length)
     return newx, spline(newx)
 
 

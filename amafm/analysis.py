@@ -49,6 +49,10 @@ def average_binned_curves(z_bins: np.ndarray, amp_bins: np.ndarray, phase_bins: 
             amp_mean = np.array([np.nanmean(np.concatenate(bins)) for bins in amp_bins])
             phase_mean = np.array([np.nanmean(np.concatenate(bins)) for bins in phase_bins])
         z_mean = np.array([np.nanmean(np.concatenate(bins)) for bins in z_bins])
+        nan_idcs = np.unique(np.concatenate([np.flatnonzero(np.isnan(x)) for x in [z_mean, amp_mean, phase_mean]]))
+        z_mean = np.delete(z_mean, nan_idcs)
+        amp_mean = np.delete(amp_mean, nan_idcs)
+        phase_mean = np.delete(phase_mean, nan_idcs)
         return z_mean, amp_mean, phase_mean
 
 
@@ -69,7 +73,7 @@ def get_average_uncertainty(binned_amp_curves: np.ndarray, binned_phase_curves: 
     return amps_at_zscore, phases_at_zscore
 
 
-def average_curves(measurements: list[Measurement], n_bins: int = 1000, zscore_cutoff: float|None = None,
+def average_curves(measurements: list[Measurement], n_bins: int = 400, zscore_cutoff: float|None = None,
                    zscores: list[float]|None = None) -> Measurement|tuple[Measurement, list[Measurement]]:
     """
     Creates a new Measurement object containing the curve averages from the given measurements.

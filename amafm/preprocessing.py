@@ -1,59 +1,12 @@
 import dtw
 import numpy as np
 
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Callable, Literal
 
 from tqdm import tqdm
 
-from . import calibration, data_loading, denoise
-
-
-@dataclass
-class Measurement:
-    z_in: np.ndarray
-    z_out: np.ndarray
-    phase_in: np.ndarray
-    phase_out: np.ndarray
-    amp_in: np.ndarray
-    amp_out: np.ndarray
-
-    @classmethod
-    def signal_types(cls) -> list[str]:
-        z_types = cls.z_types()
-        return [name for name in cls.__match_args__ if name not in z_types]
-    
-    @classmethod
-    def z_types(cls) -> list[str]:
-        return [name for name in cls.__match_args__ if name.startswith('z')]
-    
-    def __getitem__(self, item: str) -> np.ndarray:
-        return getattr(self, item)
-    
-    def __setitem__(self, key: str, value: np.ndarray) -> None:
-        setattr(self, key, value)
-    
-    def copy(self) -> 'Measurement':
-        return Measurement(**self.__dict__)
-    
-    def deepcopy(self) -> 'Measurement':
-        return Measurement(self.z_in.copy(), self.z_out.copy(), self.phase_in.copy(), self.phase_out.copy(),
-                           self.amp_in.copy(), self.amp_out.copy())
-
-
-def separate_signal(signal_array: np.ndarray, turning_point: int) -> tuple[np.ndarray, np.ndarray]:
-    curve_in = signal_array[:turning_point]
-    curve_in = np.flip(curve_in)
-    curve_out = signal_array[turning_point:]
-    return curve_in, curve_out
-
-
-def separate_drive(drive: np.ndarray, turning_point: int) -> tuple[np.ndarray, np.ndarray]:
-    z_in = drive[:turning_point]
-    z_out = drive[turning_point:]
-    z_out = np.flip(z_out)
-    return z_in, z_out
+from . import denoise
+from .data_loading import Measurement
 
 
 def find_extrema_indices(signal_array: np.ndarray, n: int = 2) -> list[int]:
@@ -139,29 +92,6 @@ def y_align(array: np.ndarray, far_param: float, method: Literal['mean', 'median
         return array - (yshift - far_param)
 
 
-def matz_Uhlig(labels: list[str], wave_data: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
-    drive = wave_data[:, labels.index('Drive')]  # m
-    drive = (drive - np.min(drive)) * 10**9  # nm, relative 0-point
-    amp = wave_data[:, labels.index('Amp')]  # observable
-    phase = wave_data[:, labels.index('Phase')]  # observable
-    turning_point = np.argmax(drive)
-    return drive, amp, phase, turning_point
-
-
-def retrieve_signals(file: str|Path) -> Measurement:
-    constants, labels, wave_data, name = data_loading.load_ibw_force(file)
-    if np.isnan(wave_data).any():
-        raise ValueError('NaN values in wave data.')
-    drive, amp, phase, turning_point = matz_Uhlig(labels, wave_data)
-
-    # separate curves into approach and retract curves
-    z_in, z_out = separate_drive(drive, turning_point)
-    phase_in, phase_out = separate_signal(phase, turning_point)
-    amp_in, amp_out = separate_signal(amp, turning_point)
-
-    return Measurement(z_in, z_out, phase_in, phase_out, amp_in, amp_out)
-
-
 def scaling(measurements: list[Measurement], signal_type: str) -> list[Measurement]:
     sig_vals = np.concatenate([m[signal_type] for m in measurements])
     data_min, data_max = sig_vals.min(), sig_vals.max()
@@ -180,20 +110,22 @@ class MeasurementScaler:
     def scale(self, measurement: Measurement, signal_type: str) -> np.ndarray:
         vmin, vmax = self.ranges[signal_type]
         return (measurement[signal_type] - vmin) / (vmax - vmin)
+    
+    def inverse_scale(self, measurement: Measurement, signal_type: str) -> np.ndarray:
+        vmin, vmax = self.ranges[signal_type]
+        return measurement[signal_type] * (vmax - vmin) + vmin
 
 
-def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: list[str]|None = None, 
-               files: list[str|Path]|None = None, far_probe_avrg_tol: int = 100, 
-               scale: bool = True, smooth: bool = True, reduce_length: int = -1,
+def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
+               scale: bool = False, inverse_scale: bool = True, smooth: bool = True, 
                smooth_func: Callable[..., np.ndarray|tuple[np.ndarray]] = denoise.savgol, 
-               smooth_kwargs: dict[str, Any] = {'w': 50, 'p': 3}, 
+               smooth_kwargs: dict[str, Any] = {'w': 20, 'p': 3}, reduce_length: int = 512,
                yalign: Literal['mean', 'median']|None = 'median', 
                xalign: Literal['increase', 'decrease', 'extrema', 'maximum', 'minimum', 'sym', 'rj']|None = 'maximum', 
-               xalign_guide_type: Literal['amp', 'phase'] = 'amp', 
-               xalign_n: int = 1, xalign_guide_idx: int|None = None) -> tuple[list[Measurement], dict[str, float]]:
+               xalign_guide_type: Literal['amp', 'phase'] = 'phase', 
+               xalign_n: int = 1, xalign_guide_idx: int|None = None) -> list[Measurement]:
     """
     Preprocess am-afm measurements from .ibw files.
-    * load data from igor-binarywave files
     * smooth measurements to reduce noise
     * scale measurements using min-max-scaling
     * align measurements on x- and y-axis
@@ -202,29 +134,21 @@ def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: l
     
     Parameters
     ----------
-    data_dir : str
-        Path of the directory containing the data in .ibw-format.
-    num_files : int, optional
-        Number of files to load. -1 to load all files, by default -1
-    start_at : int, optional
-        Number of files in alphabetical order to skip, by default 0
-    folders : list[str] | None, optional
-        List of names of subfolders in the data directory. Only load files from given folders, by default None
-    files : list[str | Path] | None, optional
-        Restrict to certain filenames from which to load, by default None
-    far_probe_avrg_tol : int, optional
-        by default 100
+    measurements: list[Measurement]
+        List of `Measurement`-objects created from `.ibw`-files to preprocess.
     scale : bool, optional
-        Set to `True` to min-max-scale amplitude- and phase-data, by default True
+        Set to `True` to min-max-scale amplitude- and phase-data, by default False
+    inverse_scale : bool, optional
+        Set to `True` to reverse scaling of amplitude- and phase-data at the end, by default True
     smooth : bool, optional
         Set to `True` to smooth amplitude- and phase-data to reduce noise, by default True
-    reduce_length : int, optional
-        Reduce curves to a given length by interpolating using cubic bsplines. Set >=1 to apply, by default -1
     smooth_func : Callable[..., np.ndarray | tuple[np.ndarray]], optional
         The function which applys smoothing on each curve. See `amafm.denoise`-module for available functions  
         by default denoise.savgol
     smooth_kwargs : _type_, optional
         Keyword arguments to pass to the smoothing-function, by default {'w': 50, 'p': 3}
+    reduce_length : int, optional
+        Reduce curves to a given length by interpolating using cubic bsplines. Set >=1 to apply, by default 512
     yalign : Literal[&#39;mean&#39;, &#39;median&#39;] | None, optional
         Method for aligning the curves on the y-axis.  
         Either aligning them to the `mean`or `median` of all curves of the same measurement-type.  
@@ -242,7 +166,7 @@ def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: l
         by default 'maximum'
     xalign_guide_type : Literal[&#39;amp&#39;, &#39;phase&#39;], optional
         Not used for DTW x-alignment. The curve-type to base the x-alignment on.  
-        Either `amp` for the amplitude or `phase`for the phase, by default 'amp'
+        Either `amp` for the amplitude or `phase`for the phase, by default 'phase'
     xalign_n : int, optional
         Only used for `xalign`-types `extrema`, `maximum` and `minimum`.  
         Chooses the `n`-th (0-based) identified feature along the x-axis to align at, by default 1
@@ -251,39 +175,32 @@ def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: l
 
     Returns
     -------
-    tuple[list[Measurement], dict[str, float]]
-        Return a list of preprocessed `Measurement`-objects and a dictionary containing calibration parameters.
+    list[Measurement]
+        Return a list of preprocessed `Measurement`-objects.
     """
-
-    # load data and cailbration parameters
-    if files is None:
-        files = data_loading.get_ibw_paths(data_dir, calib_only=False, n=num_files, folders=folders)
-        data_files = files['data'][start_at:]
-        folders = set([f.parts[1] for f in data_files])
-        calib_files = [fc for fc in files['calib'] if any([fc.parts[1].startswith(fo) for fo in folders])]
-    calib_params = calibration.get_calibration_parameters(files=calib_files, far_probe_avrg_tol=far_probe_avrg_tol)
+    measurements = [m.copy() for m in measurements]
     signal_types, z_types = Measurement.signal_types(), Measurement.z_types()
-
-    # retrieve separate signals from files
-    i_max = sum([reduce := reduce_length > 1, smooth, scale, bool(yalign), bool(xalign)]) + 1
-    i = 1
-    measurements = []
-    for file in tqdm(data_files, desc=f'Step {i}/{i_max}: Loading files'):
-        try:
-            m = retrieve_signals(file)
-            measurements.append(m)
-        except ValueError:
-            print(f"   Error in file '{file}'. Skipping file.")
-            continue
+    i_max = sum([(reduce_length > 1), smooth, scale, (scale and inverse_scale), bool(yalign), bool(xalign)])
+    i = 0
       
     # reduce curve length
-    if reduce:
+    if reduce_length > 1:
         i += 1
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Denoising'):
-            m.z_in, m.amp_in = denoise.reduce_curve(m.z_in, m.amp_in, reduce_length)
-            m.z_out, m.amp_out = denoise.reduce_curve(m.z_out, m.amp_out, reduce_length)
-            _, m.phase_in = denoise.reduce_curve(m.z_in, m.phase_in, reduce_length)
-            _, m.phase_out = denoise.reduce_curve(m.z_out, m.phase_out, reduce_length)
+        skipped_measurements = []
+        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Equalize lengths by interpolation'):
+            try:
+                z_in, m.amp_in = denoise.reduce_curve(m.z_in, m.amp_in, reduce_length)
+                z_out, m.amp_out = denoise.reduce_curve(m.z_out, m.amp_out, reduce_length)
+                _, m.phase_in = denoise.reduce_curve(m.z_in, m.phase_in, reduce_length)
+                _, m.phase_out = denoise.reduce_curve(m.z_out, m.phase_out, reduce_length)
+                m.z_in, m.z_out = z_in, z_out
+            except AssertionError as e:
+                skipped_measurements.append(m)
+                print(f"   Curves in the file '{m.file_path}' are shorter than the desired `{reduce_length=}`. "
+                      "Skipping file.")
+                continue
+        for m in skipped_measurements:
+            measurements.remove(m)
 
     # denoise signals
     if smooth:
@@ -325,4 +242,11 @@ def preprocess(data_dir: str, num_files: int = -1, start_at: int = 0, folders: l
                     guide_curve = m[f'{xalign_guide_type}_{direction}']
                     m[z_type] = feature_x_align(m[z_type], guide_curve, xalign, xalign_n)
     
-    return measurements, calib_params
+    # scale curves back again
+    if scale and inverse_scale:
+        i += 1
+        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Inverse min-max-scaling'):
+            for signal_type in signal_types:
+                m[signal_type] = mscaler.inverse_scale(m, signal_type)
+    
+    return measurements

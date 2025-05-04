@@ -25,7 +25,7 @@ if [ ! -d "$2/$3" ]; then
 
     # install python libraries
     echo ">>> install requirements"
-    pip install -r src/setup/requirements.txt
+    pip install -r requirements.txt
 
     echo ">>> install pyTorch"
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/$1

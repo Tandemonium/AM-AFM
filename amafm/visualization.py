@@ -50,7 +50,7 @@ def compare_directions(measurement: Measurement):
 
 
 def compare_raw_and_processed(measurements: list[Measurement], measurements_raw: list[Measurement],
-                              signal_type: Literal['amp', 'phase'] = 'amp', direction: Literal['in', 'out'] = 'out',
+                              signal_type: Literal['amp', 'phase'] = 'phase', direction: Literal['in', 'out'] = 'out',
                               columns: int = 4, rows: int = 7, col_width: int = 5, row_height: int = 2):
     """Plot comparison of raw and processed measurements in a grid."""
     z_name, signal_name = f'z_{direction}', f'{signal_type}_{direction}'
@@ -61,13 +61,15 @@ def compare_raw_and_processed(measurements: list[Measurement], measurements_raw:
         yraw = measurements_raw[i][signal_name]
         z = measurements[i][z_name]
         y = measurements[i][signal_name]
-        ax.plot(zraw, yraw, alpha=0.5)
-        ax.plot(z, y, 'r')
+        ax.plot(zraw, yraw, alpha=0.5, label='raw')
+        ax.plot(z, y, 'r', label='processed')
+        if i == 0:
+            ax.legend()
     plt.show()
 
 
 def compare_smoothing(measurement_raw: Measurement, smoothing_methods: list[dict[str, Any]],
-                      signal_type: Literal['amp', 'phase'] = 'amp', 
+                      signal_type: Literal['amp', 'phase'] = 'phase', 
                       direction: Literal['in', 'out'] = 'out'):
     """Plot compare a curve with different smoothing methods applied."""
     y = measurement_raw[f'{signal_type}_{direction}']
@@ -88,26 +90,25 @@ def compare_smoothing(measurement_raw: Measurement, smoothing_methods: list[dict
 
 
 def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str, float], 
-                        scaled: bool = True, signal_type: Literal['amp', 'phase'] = 'amp', 
-                        direction: Literal['in', 'out'] = 'out', alpha: float = 0.5):
+                        signal_type: Literal['amp', 'phase'] = 'phase', direction: Literal['in', 'out'] = 'out', 
+                        alpha: float = 0.5):
     """Plot comparison of y-aligned curve with original curve."""
     st, zt = f'{signal_type}_{direction}', f'z_{direction}'
     signal = [m[st] for m in measurements]
-    far_param = 0 if scaled else calib_params[f'{signal_type}_far']
+    far_param = calib_params[f'{signal_type}_far']
     aligned_med = [preprocessing.y_align(s, far_param, 'median') for s in signal]
     aligned_avg = [preprocessing.y_align(s, far_param, 'mean') for s in signal]
 
     fig, axs = plt.subplots(2, 1, figsize=(8, 6))
     for i in range(len(measurements)):
         for j, aligned in enumerate([aligned_med[i], aligned_avg[i]]):
-            if i == 0:
-                label1 = 'original'
-                label2 = 'y-aligned (median)' if j == 0 else 'y-aligned (mean)'
-            else:
-                label1 = label2 = None
+            label = 'original' if i == 0 else None
             axs[j].plot(measurements[i][zt], measurements[i][st], 
-                        color='tab:blue', alpha=alpha, label=label1)
-            axs[j].plot(measurements[i][zt], aligned, color='r', alpha=alpha, label=label2)
+                        color='tab:blue', alpha=alpha, label=label)
+    for i in range(len(measurements)):
+        for j, aligned in enumerate([aligned_med[i], aligned_avg[i]]):
+            label = ('y-aligned (median)' if j == 0 else 'y-aligned (mean)') if i == 0 else None
+            axs[j].plot(measurements[i][zt], aligned, color='r', alpha=alpha, label=label)
     axs[0].legend()
     axs[1].legend()
     fig.tight_layout()
@@ -115,7 +116,7 @@ def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str,
 
 
 def plot_compare_feature_xalign(measurements: list[Measurement], 
-                                signal_type: Literal['amp', 'phase'] = 'amp', 
+                                signal_type: Literal['amp', 'phase'] = 'phase', 
                                 direction: Literal['in', 'out'] = 'out'):
     """Plot compare a curve with different x-alignment methods applied."""
     feature_types = ['extrema', 'increase', 'decrease', 'maximum', 'minimum']
@@ -139,7 +140,7 @@ def plot_compare_feature_xalign(measurements: list[Measurement],
 
 
 def plot_compare_dtw_xalign(measurements: list[Measurement], lead_curve_idx: int,
-                            signal_type: Literal['amp', 'phase'] = 'amp', 
+                            signal_type: Literal['amp', 'phase'] = 'phase', 
                             direction: Literal['in', 'out'] = 'out', alpha: float = 0.5):
     """Plot comparison of original curve with curve with dtw-algorithm x-alignment applied."""
     m_lead = measurements[lead_curve_idx]
@@ -163,7 +164,7 @@ def plot_compare_dtw_xalign(measurements: list[Measurement], lead_curve_idx: int
 
 def plot_smallest_largest_distance(distances: np.ndarray, measurements: list[Measurement], 
                                    ideal_measurement: Measurement, n: int = 3, 
-                                   signal_type: Literal['amp', 'phase'] = 'amp', 
+                                   signal_type: Literal['amp', 'phase'] = 'phase', 
                                    direction: Literal['in', 'out'] = 'out'):
     """Plot the cumulative frquency of curve distances to a given ideal curve plus  
        the `n` curves with smallest and largest distance to the ideal curve."""
@@ -200,7 +201,7 @@ def plot_smallest_largest_distance(distances: np.ndarray, measurements: list[Mea
 
 
 def plot_averaging(avrg_measurement: Measurement, measurements: list[Measurement],
-                   signal_type: Literal['amp', 'phase'] = 'amp', 
+                   signal_type: Literal['amp', 'phase'] = 'phase', 
                    direction: Literal['in', 'out'] = 'out', cutoff: int = None, figsize: tuple[int, int] = (8, 3)):
     """Plot the given curve-type from all measurements and the average curve."""
     r = slice(cutoff)
@@ -242,7 +243,7 @@ def plot_with_uncertainty(main_curve: Measurement|tuple[np.ndarray, np.ndarray],
 
 
 def plot_average_with_uncertainty(avrg_measurement: Measurement, zscore_measurements: list[Measurement],
-                                  zscores: list[float], signal_type: Literal['amp', 'phase'] = 'amp', 
+                                  zscores: list[float], signal_type: Literal['amp', 'phase'] = 'phase', 
                                   direction: Literal['in', 'out'] = 'out', cutoff: int = None,
                                   figsize: tuple[int, int] = (8, 6)):
     """Plot a curve from an average measurement with uncertainty bands based on given z-scores."""

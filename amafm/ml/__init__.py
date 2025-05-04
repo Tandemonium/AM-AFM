@@ -1,6 +1,7 @@
 import joblib
 import os
 
+from pathlib import Path
 from typing import Any, Literal
 from IPython.display import display
 
@@ -35,8 +36,9 @@ def load_dataset(data_dir: str, folders: list[str],
     df_list = []
     m_list = []
     for folder in folders:
-        df = selection.load_screening_results(f'{data_dir}/{folder}')
-        measurements, calib_params = data_loading.load_data(data_dir, files=df.filepath.tolist())
+        directory = f'{data_dir}/{folder}'
+        df = selection.load_screening_results(directory)
+        measurements, calib_params = data_loading.load_data(files=df.filepath.tolist())
         measurements = preprocessing.preprocess(measurements, calib_params, **kwargs)
 
         # drop filepaths which from which data could not be loaded
@@ -115,14 +117,14 @@ def train_curve_selection_models(data_dir: str, folders: list[str], cross_val_k:
             # svm.SVC(),
             # ensemble.RandomForestClassifier(n_jobs=-1, random_state=seed),
             NeuralNetworkClassifier(CNN, save_dir=save_dir, in_channels=1, out_channels=1, hidden_dims=[16, 32, 64, 128, 256, 512, 1000], 
-                                    batch_size=batch_size, input_len=len(df.curve[0]), val_size=val_size, num_workers=num_workers, 
+                                    batch_size=batch_size, input_len=100, val_size=val_size, num_workers=num_workers, 
                                     max_epochs=epochs)
         ]
 
         X_train, y_train, X_test, y_test = split_data(df_accepted, df_rejected, test_size=test_size, seed=seed + (i * 2))
         for model in models:
-            model.fit(X_train, y_train)
-            scores, conf_mat = evaluate_model(model, X_test, y_test)
+            model.fit(X_train[:, :100], y_train)
+            scores, conf_mat = evaluate_model(model, X_test[:, :100], y_test)
             model_name = model.__class__.__qualname__
             results[(model_name, i)] = scores
 

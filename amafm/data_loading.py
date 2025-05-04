@@ -131,16 +131,15 @@ def retrieve_signals(file: Path) -> Measurement:
     return Measurement(z_in, z_out, phase_in, phase_out, amp_in, amp_out, file)
 
 
-def load_data(data_dir: str, folder: str|None = None, files: list[str|Path]|None = None, n_files: int = -1, 
+def load_data(data_dir: str|None = None, files: list[str|Path]|None = None, n_files: int = -1, 
               far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
-    assert folder or files, "Either folder or files must be provided."
-    data_dir: Path = Path(data_dir).resolve()
+    assert data_dir or files, "Either data_dir or files must be provided."
     if files is None:
-        files = get_ibw_paths(data_dir / folder, n_files)
+        data_dir: Path = Path(data_dir)
+        files = get_ibw_paths(data_dir, n_files)
     else:
         files = [Path(f) for f in files]
-    if not folder:
-        folder =files[0].parent.name
+        data_dir: Path = files[0].parent
     calib_files = get_ibw_paths(Path(data_dir.as_posix() + '_calib'))
     calib_params = calibration.get_calibration_parameters(files=calib_files, far_probe_avrg_tol=far_probe_avrg_tol)
 

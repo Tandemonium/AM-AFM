@@ -58,7 +58,7 @@ class Index(object):
                 files = list(set(files) - set(self.df.filepath))
         else:
             self.df = pd.DataFrame(columns=['filepath', 'accept'])
-        measurements, calib_params = data_loading.load_data(data_dir, files=files)
+        measurements, calib_params = data_loading.load_data(files=files)
         self.measurements = preprocessing.preprocess(measurements, calib_params)
         self.n_screen = len(self.measurements)
         print(f'> Loaded {self.n_screen} measurement(s) to screen.')

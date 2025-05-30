@@ -141,6 +141,24 @@ MODELS = {
             'dropout': 0.5,
         }
     ),
+    'LSTM_cutoff': (
+        NeuralNetworkClassifier, 
+        {
+            'name': 'LSTM', 
+            'model': LSTM, 
+            'save_dir': 'saves',
+            'in_channels': 100, 
+            'out_channels': 1, 
+            'batch_size': 16,
+            'val_size': 0.2, 
+            'num_workers': 4, 
+            'max_epochs': 500,
+            'lstm_size': 128, 
+            'n_lstm_layers': 3, 
+            'fc_size': 1000, 
+            'dropout': 0.5,
+        }
+    ),
 }
 
 
@@ -330,7 +348,6 @@ def save_model(name: str, model, model_dir: str, curve_type: Literal['phase_in',
     model.curve_type = curve_type
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    name = model.name if hasattr(model, 'name') else name
     joblib.dump(model, f'{model_dir}/{name}.joblib')
 
 

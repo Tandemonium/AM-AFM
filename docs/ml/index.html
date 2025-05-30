@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+    <meta name="generator" content="pdoc3 0.11.6">
+    <title>amafm.ml API documentation</title>
+    <meta name="description" content="">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css"
+        integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA=="
+        crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css"
+        integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA=="
+        crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"
+        crossorigin>
+    <style>
+        :root {
+            --highlight-color: #fe9
+        }
+
+        .flex {
+            display: flex !important
+        }
+
+        body {
+            line-height: 1.5em
+        }
+
+        #content {
+            padding: 20px
+        }
+
+        #sidebar {
+            padding: 1.5em;
+            overflow: hidden
+        }
+
+        #sidebar>*:last-child {
+            margin-bottom: 2cm
+        }
+
+        .http-server-breadcrumbs {
+            font-size: 130%;
+            margin: 0 0 15px 0
+        }
+
+        #footer {
+            font-size: .75em;
+            padding: 5px 30px;
+            border-top: 1px solid #ddd;
+            text-align: right
+        }
+
+        #footer p {
+            margin: 0 0 0 1em;
+            display: inline-block
+        }
+
+        #footer p:last-child {
+            margin-right: 30px
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-weight: 300
+        }
+
+        h1 {
+            font-size: 2.5em;
+            line-height: 1.1em
+        }
+
+        h2 {
+            font-size: 1.75em;
+            margin: 2em 0 .50em 0
+        }
+
+        h3 {
+            font-size: 1.4em;
+            margin: 1.6em 0 .7em 0
+        }
+
+        h4 {
+            margin: 0;
+            font-size: 105%
+        }
+
+        h1:target,
+        h2:target,
+        h3:target,
+        h4:target,
+        h5:target,
+        h6:target {
+            background: var(--highlight-color);
+            padding: .2em 0
+        }
+
+        a {
+            color: #058;
+            text-decoration: none;
+            transition: color .2s ease-in-out
+        }
+
+        a:visited {
+            color: #503
+        }
+
+        a:hover {
+            color: #b62
+        }
+
+        .title code {
+            font-weight: bold
+        }
+
+        h2[id^="header-"] {
+            margin-top: 2em
+        }
+
+        .ident {
+            color: #900;
+            font-weight: bold
+        }
+
+        pre code {
+            font-size: .8em;
+            line-height: 1.4em;
+            padding: 1em;
+            display: block
+        }
+
+        code {
+            background: #f3f3f3;
+            font-family: "DejaVu Sans Mono", monospace;
+            padding: 1px 4px;
+            overflow-wrap: break-word
+        }
+
+        h1 code {
+            background: transparent
+        }
+
+        pre {
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            margin: 1em 0
+        }
+
+        #http-server-module-list {
+            display: flex;
+            flex-flow: column
+        }
+
+        #http-server-module-list div {
+            display: flex
+        }
+
+        #http-server-module-list dt {
+            min-width: 10%
+        }
+
+        #http-server-module-list p {
+            margin-top: 0
+        }
+
+        .toc ul,
+        #index {
+            list-style-type: none;
+            margin: 0;
+            padding: 0
+        }
+
+        #index code {
+            background: transparent
+        }
+
+        #index h3 {
+            border-bottom: 1px solid #ddd
+        }
+
+        #index ul {
+            padding: 0
+        }
+
+        #index h4 {
+            margin-top: .6em;
+            font-weight: bold
+        }
+
+        @media (min-width:200ex) {
+            #index .two-column {
+                column-count: 2
+            }
+        }
+
+        @media (min-width:300ex) {
+            #index .two-column {
+                column-count: 3
+            }
+        }
+
+        dl {
+            margin-bottom: 2em
+        }
+
+        dl dl:last-child {
+            margin-bottom: 4em
+        }
+
+        dd {
+            margin: 0 0 1em 3em
+        }
+
+        #header-classes+dl>dd {
+            margin-bottom: 3em
+        }
+
+        dd dd {
+            margin-left: 2em
+        }
+
+        dd p {
+            margin: 10px 0
+        }
+
+        .name {
+            background: #eee;
+            font-size: .85em;
+            padding: 5px 10px;
+            display: inline-block;
+            min-width: 40%
+        }
+
+        .name:hover {
+            background: #e0e0e0
+        }
+
+        dt:target .name {
+            background: var(--highlight-color)
+        }
+
+        .name>span:first-child {
+            white-space: nowrap
+        }
+
+        .name.class>span:nth-child(2) {
+            margin-left: .4em
+        }
+
+        .inherited {
+            color: #999;
+            border-left: 5px solid #eee;
+            padding-left: 1em
+        }
+
+        .inheritance em {
+            font-style: normal;
+            font-weight: bold
+        }
+
+        .desc h2 {
+            font-weight: 400;
+            font-size: 1.25em
+        }
+
+        .desc h3 {
+            font-size: 1em
+        }
+
+        .desc dt code {
+            background: inherit
+        }
+
+        .source>summary,
+        .git-link-div {
+            color: #666;
+            text-align: right;
+            font-weight: 400;
+            font-size: .8em;
+            text-transform: uppercase
+        }
+
+        .source summary>* {
+            white-space: nowrap;
+            cursor: pointer
+        }
+
+        .git-link {
+            color: inherit;
+            margin-left: 1em
+        }
+
+        .source pre {
+            max-height: 500px;
+            overflow: auto;
+            margin: 0
+        }
+
+        .source pre code {
+            font-size: 12px;
+            overflow: visible;
+            min-width: max-content
+        }
+
+        .hlist {
+            list-style: none
+        }
+
+        .hlist li {
+            display: inline
+        }
+
+        .hlist li:after {
+            content: ',\2002'
+        }
+
+        .hlist li:last-child:after {
+            content: none
+        }
+
+        .hlist .hlist {
+            display: inline;
+            padding-left: 1em
+        }
+
+        img {
+            max-width: 100%
+        }
+
+        td {
+            padding: 0 .5em
+        }
+
+        .admonition {
+            padding: .1em 1em;
+            margin: 1em 0
+        }
+
+        .admonition-title {
+            font-weight: bold
+        }
+
+        .admonition.note,
+        .admonition.info,
+        .admonition.important {
+            background: #aef
+        }
+
+        .admonition.todo,
+        .admonition.versionadded,
+        .admonition.tip,
+        .admonition.hint {
+            background: #dfd
+        }
+
+        .admonition.warning,
+        .admonition.versionchanged,
+        .admonition.deprecated {
+            background: #fd4
+        }
+
+        .admonition.error,
+        .admonition.danger,
+        .admonition.caution {
+            background: lightpink
+        }
+    </style>
+    <style media="screen and (min-width: 700px)">
+        @media screen and (min-width:700px) {
+            #sidebar {
+                width: 30%;
+                height: 100vh;
+                overflow: auto;
+                position: sticky;
+                top: 0
+            }
+
+            #content {
+                width: 70%;
+                max-width: 100ch;
+                padding: 3em 4em;
+                border-left: 1px solid #ddd
+            }
+
+            pre code {
+                font-size: 1em
+            }
+
+            .name {
+                font-size: 1em
+            }
+
+            main {
+                display: flex;
+                flex-direction: row-reverse;
+                justify-content: flex-end
+            }
+
+            .toc ul ul,
+            #index ul ul {
+                padding-left: 1em
+            }
+
+            .toc>ul>li {
+                margin-top: .5em
+            }
+        }
+    </style>
+    <style media="print">
+        @media print {
+            #sidebar h1 {
+                page-break-before: always
+            }
+
+            .source {
+                display: none
+            }
+        }
+
+        @media print {
+            * {
+                background: transparent !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                text-shadow: none !important
+            }
+
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 90%
+            }
+
+            a[href][title]:after {
+                content: none
+            }
+
+            abbr[title]:after {
+                content: " (" attr(title) ")"
+            }
+
+            .ir a:after,
+            a[href^="javascript:"]:after,
+            a[href^="#"]:after {
+                content: ""
+            }
+
+            pre,
+            blockquote {
+                border: 1px solid #999;
+                page-break-inside: avoid
+            }
+
+            thead {
+                display: table-header-group
+            }
+
+            tr,
+            img {
+                page-break-inside: avoid
+            }
+
+            img {
+                max-width: 100% !important
+            }
+
+            @page {
+                margin: 0.5cm
+            }
+
+            p,
+            h2,
+            h3 {
+                orphans: 3;
+                widows: 3
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                page-break-after: avoid
+            }
+        }
+    </style>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+        integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ=="
+        crossorigin></script>
+    <script>window.addEventListener('DOMContentLoaded', () => {
+            hljs.configure({ languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml'] });
+            hljs.highlightAll();
+            /* Collapse source docstrings */
+            setTimeout(() => {
+                [...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+                    .filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+                    .forEach(el => {
+                        let d = document.createElement('details');
+                        d.classList.add('hljs-string');
+                        d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+                        el.replaceWith(d);
+                    });
+            }, 100);
+        })</script>
+</head>
+
+<body>
+    <main>
+        <article id="content">
+            <header>
+                <h1 class="title">Module <code>amafm.ml</code></h1>
+            </header>
+            <section>
+                <h2 class="section-title" id="header-submodules">Sub-modules</h2>
+                <dl>
+                    <dt><code class="name">amafm.ml.models</code></dt>
+                    <dd>
+                        <div class="desc"></div>
+                    </dd>
+                    <dt><code class="name">amafm.ml.trainer</code>
+                    </dt>
+                    <dd>
+                        <div class="desc"></div>
+                    </dd>
+                </dl>
+            </section>
+            <section>
+                <h2 class="section-title" id="header-functions">Functions</h2>
+                <dl>
+                    <dt id="amafm.ml.load_dataset"><code class="name flex">
+<span>def <span class="ident">load_dataset</span></span>(<span>data_dir: str, folders: list[str]) ‑> tuple[pandas.core.frame.DataFrame, list[tuple[list[<a title="amafm.data_loading.Measurement" href="../data_loading.html#amafm.data_loading.Measurement">Measurement</a>], dict[str, float]]]]</span>
+</code></dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Load the <code>screened_files.csv</code> from the given folders and load the data. </p>
+                            <h2 id="parameters">Parameters</h2>
+                            <dl>
+                                <dt><strong><code>data_dir</code></strong> :&ensp;<code>str</code></dt>
+                                <dd>Directory containing the given <code>folders</code>.</dd>
+                                <dt><strong><code>folders</code></strong> :&ensp;<code>list[str]</code></dt>
+                                <dd>A list of folders, each containing .ibw-files and a <code>screened_files.csv</code>.
+                                </dd>
+                            </dl>
+                            <h2 id="returns">Returns</h2>
+                            <dl>
+                                <dt><code>tuple[pd.DataFrame, MCT_TYPE]</code></dt>
+                                <dd>A dataframe with the screening-results and a list of tuples,
+                                    each containing a list of <code>Measurement</code> objects and a dictionary with the
+                                    respective calibration parameters.</dd>
+                            </dl>
+                        </div>
+                    </dd>
+                    <dt id="amafm.ml.predict"><code class="name flex">
+<span>def <span class="ident">predict</span></span>(<span>experiments_dir: str | pathlib.Path,<br>measurements_raw: list[<a title="amafm.data_loading.Measurement" href="../data_loading.html#amafm.data_loading.Measurement">Measurement</a>] | None = None,<br>calib_params: dict[str, float] | None = None,<br>model_path: str = 'models/SVM.joblib',<br>far_probe_avrg_tol: int = 100) ‑> tuple[list[<a title="amafm.data_loading.Measurement" href="../data_loading.html#amafm.data_loading.Measurement">Measurement</a>], dict[str, float]]</span>
+</code></dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Classify measurements using a pre-trained model and return accepted instances of
+                                unpreprocessed measurements.</p>
+                            <h2 id="parameters">Parameters</h2>
+                            <dl>
+                                <dt><strong><code>experiments_dir</code></strong> :&ensp;<code>str | Path</code></dt>
+                                <dd>Store results here. If <code>measurements</code> is not given, also load experiments
+                                    from here,
+                                    by default <code>None</code></dd>
+                                <dt><strong><code>measurements</code></strong>
+                                    :&ensp;<code>list[Measurement] | None</code>, optional</dt>
+                                <dd>Raw unprocessed measurements to classify. If <code>None</code> load from
+                                    <code>experiments_dir</code>,
+                                    by default <code>None</code></dd>
+                                <dt><strong><code>model_path</code></strong> :&ensp;<code>str</code>, optional</dt>
+                                <dd>Path to a pre-trained model, by default 'models/SVM.joblib'</dd>
+                                <dt><strong><code>far_probe_avrg_tol</code></strong> :&ensp;<code>int</code>, optional
+                                </dt>
+                                <dd>Tolerance for averaging the far probe signal, only used if loading measurements from
+                                    directory,
+                                    by default 100</dd>
+                            </dl>
+                            <h2 id="returns">Returns</h2>
+                            <dl>
+                                <dt><code>tuple[list[Measurement], dict[str, float]]</code></dt>
+                                <dd>A list of raw (not preprocessed) measurements classified as acceptable
+                                    and the calibration parameters required for preprocessing.</dd>
+                            </dl>
+                            <h2 id="raises">Raises</h2>
+                            <dl>
+                                <dt><code>FileNotFoundError</code></dt>
+                                <dd>If the model file does not exist.</dd>
+                            </dl>
+                        </div>
+                    </dd>
+                    <dt id="amafm.ml.print_results"><code class="name flex">
+<span>def <span class="ident">print_results</span></span>(<span>results: pandas.core.frame.DataFrame, conf_mats: dict[str, numpy.ndarray])</span>
+</code></dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Print the scores and display the confusion matrices of the model training.</p>
+                            <h2 id="parameters">Parameters</h2>
+                            <dl>
+                                <dt><strong><code>results</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+                                <dd>The <code>DataFrame</code> containing the evaluation scores, returned by the
+                                    <code><a title="amafm.ml.train_curve_selection_models" href="#amafm.ml.train_curve_selection_models">train_curve_selection_models()</a></code>-function.
+                                </dd>
+                                <dt><strong><code>conf_mats</code></strong> :&ensp;<code>dict[str, np.ndarray]</code>
+                                </dt>
+                                <dd>The dictionary containg a confusion matrix for each model,
+                                    returned by the
+                                    <code><a title="amafm.ml.train_curve_selection_models" href="#amafm.ml.train_curve_selection_models">train_curve_selection_models()</a></code>-function.
+                                </dd>
+                            </dl>
+                        </div>
+                    </dd>
+                    <dt id="amafm.ml.train_curve_selection_models"><code class="name flex">
+<span>def <span class="ident">train_curve_selection_models</span></span>(<span>name: str,<br>screening_data: pandas.core.frame.DataFrame,<br>mct: list[tuple[list[<a title="amafm.data_loading.Measurement" href="../data_loading.html#amafm.data_loading.Measurement">Measurement</a>], dict[str, float]]],<br>model_constr: list[tuple[type[sklearn.base.BaseEstimator], dict[str, typing.Any]]],<br>cross_val_k: int = 5,<br>model_dir: str = 'models',<br>test_size: float = 0.2,<br>deciding_score: Literal['acc', 'prec', 'rec', 'fi'] = 'prec',<br>seed: int = 12,<br>curve_type: Literal['phase_in', 'phase_out', 'amp_in', 'amp_out'] = 'phase_out',<br>cutoff: int | None = None,<br>**preprocess_kwargs) ‑> tuple[list[sklearn.base.BaseEstimator], pandas.core.frame.DataFrame, dict[str, numpy.ndarray]]</span>
+</code></dt>
+                    <dd>
+                        <div class="desc">
+                            <p>Train one or more models for curve selection.
+                                The models are first evaluated using k-fold cross validation.
+                                The best performing model is trained with the full dataset and saved to disk.</p>
+                            <h2 id="parameters">Parameters</h2>
+                            <dl>
+                                <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+                                <dd>Name of this model training, used when saving the model.</dd>
+                                <dt><strong><code>data</code></strong> :&ensp;<code>pd.DataFrame</code></dt>
+                                <dd>Dataframe containing screening results. Available via the
+                                    <code><a title="amafm.ml.load_dataset" href="#amafm.ml.load_dataset">load_dataset()</a></code>-function.
+                                </dd>
+                                <dt><strong><code>mct</code></strong>
+                                    :&ensp;<code>list[tuple[list[Measurement], dict[str, float]]]</code></dt>
+                                <dd>A list of tuples, each containing a list of <code>Measurement</code> objects and a
+                                    dictionary
+                                    with the respective calibration parameters. Available via the
+                                    <code><a title="amafm.ml.load_dataset" href="#amafm.ml.load_dataset">load_dataset()</a></code>-function.
+                                </dd>
+                                <dt><strong><code>model_constr</code></strong>
+                                    :&ensp;<code>list[tuple[type[BaseEstimator], dict[str, Any]]]</code></dt>
+                                <dd>A list of tuples, each containing a model class and a dictionary with the model's
+                                    keyword parameters.
+                                    Many predefined tuples are available in the <code>amafm.ml.MODELS</code> dictionary.
+                                </dd>
+                                <dt><strong><code>cross_val_k</code></strong> :&ensp;<code>int</code>, optional</dt>
+                                <dd>Number of cross validation folds, by default 5</dd>
+                                <dt><strong><code>model_dir</code></strong> :&ensp;<code>str</code>, optional</dt>
+                                <dd>Directory where the final model is saved to, by default 'models'</dd>
+                                <dt><strong><code>test_size</code></strong> :&ensp;<code>float</code>, optional</dt>
+                                <dd>Size of the test set used for cross validation, by default 0.2</dd>
+                                <dt><strong><code>deciding_score</code></strong>
+                                    :&ensp;<code>Literal['acc', 'prec', 'rec', 'fi']</code>, optional</dt>
+                                <dd>Name of the score, which is used to determine the best performance, by default
+                                    'prec'</dd>
+                                <dt><strong><code>seed</code></strong> :&ensp;<code>int</code>, optional</dt>
+                                <dd>Seed for all randomizations, by default 12</dd>
+                                <dt><strong><code>curve_type</code></strong>
+                                    :&ensp;<code>Literal[&amp;#39;phase_in&amp;#39;, &amp;#39;phase_out&amp;#39;, &amp;#39;amp_in&amp;#39;, &amp;#39;amp_out&amp;#39;]</code>,
+                                    optional</dt>
+                                <dd>Curve type contained in a <code>Measurement</code> object, on which the selection is
+                                    based on, by default 'phase_out'</dd>
+                                <dt><strong><code>cutoff</code></strong> :&ensp;<code>int | None</code>, optional</dt>
+                                <dd>Only use the part of the curves until this index for model training.
+                                    This focuses the training on the beginning of the curve, which contains the most
+                                    significant information, by default None</dd>
+                            </dl>
+                            <h2 id="returns">Returns</h2>
+                            <dl>
+                                <dt><code>tuple[BaseEstimator, pd.DataFrame, dict[str, np.ndarray]]</code></dt>
+                                <dd>The best performing fully trained model, a <code>DataFrame</code> containing the
+                                    evaluation scores
+                                    and a dictionary containg a confusion matrix, averaged over the validation steps,
+                                    for each model.</dd>
+                            </dl>
+                        </div>
+                    </dd>
+                </dl>
+            </section>
+            <section>
+            </section>
+        </article>
+        <nav id="sidebar">
+            <div class="toc">
+                <ul></ul>
+            </div>
+            <ul id="index">
+                <li>
+                    <h3>Super-module</h3>
+                    <ul>
+                        <li><code><a title="amafm" href="../../docs.html">amafm</a></code></li>
+                    </ul>
+                </li>
+                <li>
+                    <h3><a href="#header-submodules">Sub-modules</a></h3>
+                    <ul>
+                        <li><code>amafm.ml.models</code></li>
+                        <li><code>amafm.ml.trainer</code></li>
+                    </ul>
+                </li>
+                <li>
+                    <h3><a href="#header-functions">Functions</a></h3>
+                    <ul class="">
+                        <li><code><a title="amafm.ml.load_dataset" href="#amafm.ml.load_dataset">load_dataset</a></code>
+                        </li>
+                        <li><code><a title="amafm.ml.predict" href="#amafm.ml.predict">predict</a></code></li>
+                        <li><code><a title="amafm.ml.print_results" href="#amafm.ml.print_results">print_results</a></code>
+                        </li>
+                        <li><code><a title="amafm.ml.train_curve_selection_models" href="#amafm.ml.train_curve_selection_models">train_curve_selection_models</a></code>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </main>
+    <footer id="footer">
+        <p>Generated by <a href="https://pdoc3.github.io/pdoc"
+                title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+    </footer>
+</body>
+
+</html>

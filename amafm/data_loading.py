@@ -1,3 +1,4 @@
+import glob
 import re
 import numpy as np
 
@@ -21,7 +22,7 @@ class Measurement:
     phase_out: np.ndarray
     amp_in: np.ndarray
     amp_out: np.ndarray
-    file_path: Path
+    file_path: Path|None = None
 
     @classmethod
     def signal_types(cls) -> list[str]:
@@ -49,6 +50,19 @@ class Measurement:
         if isinstance(value, Measurement):
             return self.file_path == value.file_path
         return False
+
+
+def backup_existing(directory: str, filename: str):
+    # rename file if already exists:
+    dir = Path(directory)
+    filepath = dir / filename
+    if filepath.exists():
+        files = glob.glob(f'{dir.as_posix()}/{filepath.stem}_*{filepath.suffix}')
+        file_numbers = [f.split(filepath.stem)[-1].split('.')[0].split('_')[-1] for f in files]
+        file_numbers = sorted([int(n) for n in file_numbers if n.isdigit()])
+        new_number = file_numbers[-1] + 1 if file_numbers else 0
+        new_fp = dir / f'{filepath.stem}_{new_number}{filepath.suffix}'
+        filepath.rename(new_fp)
 
 
 def get_ibw_paths(directory: Path, n_files: int = -1) -> list[Path]:
@@ -111,8 +125,8 @@ def separate_drive(drive: np.ndarray, turning_point: int) -> tuple[np.ndarray, n
 
 def matz_Uhlig(labels: list[str], wave_data: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     drive = wave_data[:, labels.index('Drive')]  # m
-    drive = (drive - np.min(drive)) * 10**9  # nm, relative 0-point
-    amp = wave_data[:, labels.index('Amp')]  # observable
+    drive = (drive - np.min(drive))              # m, relative 0-point
+    amp = wave_data[:, labels.index('Amp')]      # observable
     phase = wave_data[:, labels.index('Phase')]  # observable
     turning_point = np.argmax(drive)
     return drive, amp, phase, turning_point
@@ -131,17 +145,40 @@ def retrieve_signals(file: Path) -> Measurement:
     return Measurement(z_in, z_out, phase_in, phase_out, amp_in, amp_out, file)
 
 
-def load_data(data_dir: str|None = None, files: list[str|Path]|None = None, n_files: int = -1, 
+def load_data(data_dir: str|Path|None = None, files: list[str|Path]|None = None, n_files: int = -1, 
               far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
+    """
+    Load data from .ibw files from the given directory and return measurements and calibration parameters.
+
+    Parameters
+    ----------
+    data_dir : str | Path | None, optional
+        Directory containing the `.ibw` files of an experiment. 
+        Not required, if instead a list of filepaths is given, by default None
+    files : list[str | Path] | None, optional
+        A list of filepaths of the .ibw files to load.
+        Not required if a directory is given, by default None
+    n_files : int, optional
+        Number of files to load. `-1` to load all files , by default -1
+    far_probe_avrg_tol : int, optional
+        The number of measuring steps at the beginning/end of the approach/retract curve 
+        over which the measurements are averaged for the parameters of the probe at maximum distance, by default 100
+
+    Returns
+    -------
+    tuple[list[Measurement], dict[str, float]]
+        A list of Measurements, each containing the data of a file, and 
+        a dictionary containing calibration parameters.
+    """
     assert data_dir or files, "Either data_dir or files must be provided."
     if files is None:
-        data_dir: Path = Path(data_dir)
+        data_dir: Path = Path(data_dir).resolve()
         files = get_ibw_paths(data_dir, n_files)
     else:
-        files = [Path(f) for f in files]
+        files = [Path(f).resolve() for f in files]
         data_dir: Path = files[0].parent
-    calib_files = get_ibw_paths(Path(data_dir.as_posix() + '_calib'))
-    calib_params = calibration.get_calibration_parameters(files=calib_files, far_probe_avrg_tol=far_probe_avrg_tol)
+    calib_params = calibration.get_calibration_parameters(data_dir.with_name(data_dir.name + '_calib'), 
+                                                          far_probe_avrg_tol=far_probe_avrg_tol)
 
     # retrieve separate signals from files
     measurements: list[Measurement] = []

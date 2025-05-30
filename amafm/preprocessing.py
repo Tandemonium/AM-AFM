@@ -117,13 +117,13 @@ class MeasurementScaler:
 
 
 def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
-               scale: bool = False, inverse_scale: bool = True, smooth: bool = True, 
+               scale: bool = False, inverse_scale: bool = True, scale_per_measurement: bool = False, smooth: bool = True, 
                smooth_func: Callable[..., np.ndarray|tuple[np.ndarray]] = denoise.savgol, 
                smooth_kwargs: dict[str, Any] = {'w': 20, 'p': 3}, reduce_length: int = 512,
                yalign: Literal['mean', 'median']|None = 'median', 
                xalign: Literal['increase', 'decrease', 'extrema', 'maximum', 'minimum', 'sym', 'rj']|None = 'maximum', 
                xalign_guide_type: Literal['amp', 'phase'] = 'phase', 
-               xalign_n: int = 1, xalign_guide_idx: int|None = None) -> list[Measurement]:
+               xalign_n: int = 1, xalign_guide_idx: int|None = None) -> tuple[list[Measurement], list[int]]:
     """
     Preprocess am-afm measurements from .ibw files.
     * smooth measurements to reduce noise
@@ -140,6 +140,8 @@ def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
         Set to `True` to min-max-scale amplitude- and phase-data, by default False
     inverse_scale : bool, optional
         Set to `True` to reverse scaling of amplitude- and phase-data at the end, by default True
+    scale_per_measurement : bool, optional
+        Set to `True` to scale each measurement individually otherwise scale over all measurements, by default False.
     smooth : bool, optional
         Set to `True` to smooth amplitude- and phase-data to reduce noise, by default True
     smooth_func : Callable[..., np.ndarray | tuple[np.ndarray]], optional
@@ -175,27 +177,30 @@ def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
 
     Returns
     -------
-    list[Measurement]
-        Return a list of preprocessed `Measurement`-objects.
+    tuple[list[Measurement], list[int]]
+        Return a list of preprocessed `Measurement`-objects and a list of indices of the measurements-list of failed measurements.
     """
     measurements = [m.copy() for m in measurements]
     signal_types, z_types = Measurement.signal_types(), Measurement.z_types()
-    i_max = sum([(reduce_length > 1), smooth, scale, (scale and inverse_scale), bool(yalign), bool(xalign)])
-    i = 0
+    n_steps = sum([(reduce_length > 1), smooth, scale, (scale and inverse_scale), bool(yalign), bool(xalign)])
+    step = 0
+    skipped_idcs = []
       
     # reduce curve length
     if reduce_length > 1:
-        i += 1
+        step += 1
         skipped_measurements = []
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Equalize lengths by interpolation'):
+        for i, m in tqdm(enumerate(measurements), total=len(measurements), 
+                         desc=f'Step {step}/{n_steps}: Equalize lengths by interpolation'):
             try:
                 z_in, m.amp_in = denoise.reduce_curve(m.z_in, m.amp_in, reduce_length)
                 z_out, m.amp_out = denoise.reduce_curve(m.z_out, m.amp_out, reduce_length)
                 _, m.phase_in = denoise.reduce_curve(m.z_in, m.phase_in, reduce_length)
                 _, m.phase_out = denoise.reduce_curve(m.z_out, m.phase_out, reduce_length)
                 m.z_in, m.z_out = z_in, z_out
-            except AssertionError as e:
+            except AssertionError:
                 skipped_measurements.append(m)
+                skipped_idcs.append(i)
                 print(f"   Curves in the file '{m.file_path}' are shorter than the desired `{reduce_length=}`. "
                       "Skipping file.")
                 continue
@@ -204,32 +209,38 @@ def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
 
     # denoise signals
     if smooth:
-        i += 1
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Denoising'):
+        step += 1
+        for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: Denoising'):
             for signal_type in signal_types:
                 m[signal_type] = smooth_func(m[signal_type], **smooth_kwargs)
-        
-    # normalize to [0, 1]
-    if scale:
-        i += 1
-        mscaler = MeasurementScaler(measurements)
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Min-max-scaling'):
-            for signal_type in signal_types:
-                m[signal_type] = mscaler.scale(m, signal_type)
-
+    
     # y-alignment
     if yalign:
-        i += 1
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: y-alignment'):
+        step += 1
+        for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: y-alignment'):
             for signal_type in signal_types:
                 curve_metric = signal_type.split('_')[0]
                 far_param = 0 if scale else calib_params[curve_metric + '_far']
                 m[signal_type] = y_align(m[signal_type], far_param, yalign)
+
+    # normalize to [0, 1]
+    if scale:
+        step += 1
+        if scale_per_measurement:
+            for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: Min-max-scaling'):
+                for signal_type in signal_types:
+                    vmin, vmax = m[signal_type].min(), m[signal_type].max()
+                    m[signal_type] = (m[signal_type] - vmin) / (vmax - vmin)
+        else:
+            mscaler = MeasurementScaler(measurements)
+            for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: Min-max-scaling'):
+                for signal_type in signal_types:
+                    m[signal_type] = mscaler.scale(m, signal_type)
     
     # process z-curves (x-alignment)
     if xalign:
-        i += 1
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: x-alignment'):
+        step += 1
+        for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: x-alignment'):
             if xalign in ['sym', 'rj']:
                 guide = measurements[xalign_guide_idx]
                 for signal_type in signal_types:
@@ -244,9 +255,12 @@ def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
     
     # scale curves back again
     if scale and inverse_scale:
-        i += 1
-        for m in tqdm(measurements, desc=f'Step {i}/{i_max}: Inverse min-max-scaling'):
-            for signal_type in signal_types:
-                m[signal_type] = mscaler.inverse_scale(m, signal_type)
+        step += 1
+        if scale_per_measurement:
+            pass
+        else:
+            for m in tqdm(measurements, desc=f'Step {step}/{n_steps}: Inverse min-max-scaling'):
+                for signal_type in signal_types:
+                    m[signal_type] = mscaler.inverse_scale(m, signal_type)
     
-    return measurements
+    return measurements, skipped_idcs

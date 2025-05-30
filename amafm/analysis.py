@@ -1,9 +1,15 @@
+import os
+import pickle
 import warnings
-from typing import Literal
 
 import numpy as np
+
+from pathlib import Path
+from typing import Literal
+
 from tqdm import tqdm
 
+from . import data_loading
 from .preprocessing import Measurement
 
 
@@ -81,13 +87,18 @@ def average_curves(measurements: list[Measurement], n_bins: int = 400, zscore_cu
 
     Parameters
     ----------
-    measurements : list[preprocessing.Measurement]
+    measurements : list[Measurement]
+        List of `Measurement` objects to average for each contained curve type.
     n_bins : int, optional
-        nuber of bins in which to separate the total range of the curves, by default 1000
+        Number of bins in which to separate the total range of the curves, by default 400
     zscore_cutoff: float|None, optional
         In each bin discard all values with a Z-score beyond the given threshold, by default None
     zscores: list[float]|None, optional
         List of z-scores for which to return the corresponding values of the curves, by default None
+
+    Notes
+    -----
+    With the `zscores` argument the boundaries of the average curve for the given z-scores are returned as a second output.
 
     Returns
     -------
@@ -116,3 +127,46 @@ def average_curves(measurements: list[Measurement], n_bins: int = 400, zscore_cu
         return avrg_measurement, zs_measurements
     else:
         return avrg_measurement
+
+
+SAVE_NAME = 'average_measurement.pkl'
+def save(measurement: Measurement, dir: str) -> None:
+    """
+    Save a `Measurement` object as `average_measurement.pkl` in the given directory.
+
+    Parameters
+    ----------
+    measurement : Measurement
+        `Measurement` object to save.
+    dir : str
+        Save location.
+    """
+    data_loading.backup_existing(dir, SAVE_NAME)
+    with open(os.path.join(dir, SAVE_NAME), 'wb') as f:
+        pickle.dump(measurement, f)
+
+
+def load(dir: str) -> Measurement:
+    """
+    Load the `Measurement` object saved in the file `average_measurement.pkl` in the given directory.
+
+    Parameters
+    ----------
+    dir : str
+        Directory containing the file `average_measurement.pkl`.
+
+    Returns
+    -------
+    Measurement
+        The `Measurement` object loaded from the directory.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file `average_measurement.pkl` does not exist in the given directory.
+    """
+    filepath = os.path.join(dir, SAVE_NAME)
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f'File `{SAVE_NAME}` not found in `{dir}`.')
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)

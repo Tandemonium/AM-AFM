@@ -7,7 +7,9 @@ from amafm import selection
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Screen experiments and accept or reject curves as target data.")
+    parser = argparse.ArgumentParser(description=("Open a GUI to screen curves and accept or reject measurements. "
+                                                  "The classification of the measurements is saved to `screened_files.csv` "
+                                                  "inside the given directory."))
     parser.add_argument('data_dir', type=str,
                         help="Path to directory containing experiment `.ibw`-files to load.")
     parser.add_argument('-t', '--target', type=int, default=100,

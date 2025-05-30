@@ -8,26 +8,31 @@ from . import data_loading
 
 
 def get_calibration_parameters(data_dir: str|None = None, num_files: int = -1, files: list[str|Path]|None = None, 
-                               far_probe_avrg_tol: int = 100,  folders: Optional[list[str]] = None, 
-                               verbose: bool = False) -> dict[str, float]:
+                               far_probe_avrg_tol: int = 100, verbose: bool = False) -> dict[str, float]:
     """
     Get calibration parameters from the calibration files found in the data-directory.
 
-    Keyword Arguments:
-        data_dir {str} -- Path to the data-directory. Not used if `files` is provided. (default: {None})
-        files {list[str|Path]} -- List of calibration filepaths. If None, the files are loaded from the data-directory. 
-                                  (default: {None})
-        num_files {int} -- Number of files to load. -1 or 0 to load all files. Not used if `files` is provided.
-                           (default: {-1})
-        far_probe_avrg_tol {int} -- The number of measuring steps at the beginning/end of the approach/retract curve 
-                                    over which the measurements are averaged for the parameters of the probe at maximum distance.
-                                    (default: {100})
-        folders {list[str]} -- List of sub-folders in the data-directory to get calibration files from. 
-                               If None, all folders are selected. Not used if `files` is provided. (default: {None})
-        verbose {bool} -- Print calibration parameters. (default: {False})
+    Parameters
+    ----------
+    data_dir : str, optional
+        Path to the data-directory. Not used if `files` is provided, by default None
+    num_files : int, optional
+        Number of files to load. -1 or 0 to load all files. Not used if `files` is provided, by default -1
+    files : list[str | Path] | None, optional
+        List of calibration filepaths. If None, the files are loaded from the data-directory, by default None
+    far_probe_avrg_tol : int, optional
+        Number of measuring steps at the beginning/end of the approach/retract curve over which the measurements 
+        are averaged for the parameters of the probe at maximum distance, by default 100
+    folders : list[str] | None, optional
+        List of sub-folders in the data-directory to get calibration files from. 
+        If None, all folders are selected. Not used if `files` is provided, by default None
+    verbose : bool, optional
+        Print calibration parameters, by default False
 
-    Returns:
-        {dict[str, float]}: Dictionary containing the following calibration parameters:
+    Returns
+    -------
+    dict[str, float]
+        Dictionary containing the following calibration parameters:
             - phase_far: Phase far
             - amp_far: Amplitude far
             - error_phase: Error in phase
@@ -38,11 +43,8 @@ def get_calibration_parameters(data_dir: str|None = None, num_files: int = -1, f
             - freq_drive: Drive frequency
     """
     if files is None:
-        print("Calibration: Read ibw-files and get calibration parameters ...")
-        files = []
         directory = Path(data_dir).resolve()
-        for folder in folders:
-            files += data_loading.get_ibw_paths(directory / folder, n=num_files)
+        files = data_loading.get_ibw_paths(directory, n_files=num_files)
 
     param_data = []
     for cf in files:
@@ -93,7 +95,7 @@ def matz_AMcalibration(ibw_data: tuple[dict[str, str], list[str], np.ndarray, st
     phase = wave_data[:, labels.index('Phase')]              # deg
     amp = wave_data[:, labels.index('Amp')]                  # m
     drive = wave_data[:,labels.index('Drive')]               # m
-    params['drive'] = np.abs(drive - np.max(drive)) * 10**9  # nm
+    params['drive'] = np.abs(drive - np.max(drive))          # m
 
     pf_app = np.mean(phase[:far_probe_avrg_tol])
     sd_pf_app = (np.std(phase[:far_probe_avrg_tol])**2) / len(phase[:far_probe_avrg_tol])

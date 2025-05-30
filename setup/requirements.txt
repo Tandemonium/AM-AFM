@@ -1,0 +1,13 @@
+dtw-python
+joblib
+lightning
+matplotlib
+numpy
+pandas
+scikit-learn
+scipy
+seaborn
+sklearn_crfsuite
+statsmodels
+tensorboard
+tqdm

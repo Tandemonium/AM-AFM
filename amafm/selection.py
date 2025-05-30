@@ -1,3 +1,4 @@
+import glob
 import pickle
 
 from pathlib import Path
@@ -10,19 +11,62 @@ import pandas as pd
 from matplotlib.widgets import Button
 
 from . import data_loading, preprocessing
-from .preprocessing import Measurement
+from .data_loading import Measurement
 
 
 SAVE_NAME = 'screened_files.csv'
 
 
-def load_screening_results(dir: str|Path) -> pd.DataFrame:
-    return pd.read_csv(Path(dir) / SAVE_NAME, converters={'filepath': Path})
+def load_screening_results(dir: Path) -> pd.DataFrame:
+    try:
+        return pd.read_csv(dir / SAVE_NAME, converters={'filepath': lambda fp: Path(dir, fp).resolve()})
+    except:
+        return pd.DataFrame(columns=['filepath', 'accept'])
 
 
-def load_accepted_filepaths(dir: str|Path) -> list[Path]:
+def load_accepted_filepaths(dir: Path) -> list[Path]:
     df = load_screening_results(dir)
     return df[df['accept']].filepath.tolist()
+
+
+def load_accepted_data(experiments_dir: str, n_files: int = -1, 
+                       far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
+    """
+    Load data from files marked as accepted via file-screening. 
+    The directory needs to contain .ibw-files and a `screened_files.csv`.
+
+    Parameters
+    ----------
+    experiments_dir : str
+        Directory containing .ibw-files and a `screened_files.csv`.
+    n_files : int, optional
+        Number of files to load. -1 to load all 'accepted' files, by default -1
+    far_probe_avrg_tol : int, optional
+        The number of measuring steps at the beginning/end of the approach/retract curve 
+        over which the measurements are averaged for the parameters of the probe at maximum distance, by default 100
+
+    Returns
+    -------
+    tuple[list[Measurement], dict[str, float]]
+        A list of Measurements, each containing the data of a file, and 
+        a dictionary containing calibration parameters.
+    """
+    filepaths = load_accepted_filepaths(Path(experiments_dir))
+    return data_loading.load_data(files=filepaths, n_files=n_files, far_probe_avrg_tol=far_probe_avrg_tol)
+
+
+def write_to_df(df: pd.DataFrame, filepath: Path, accepted: bool) -> pd.DataFrame:
+    if filepath in df.filepath.values:
+        df.loc[df.filepath == filepath, 'accept'] = accepted
+    else:
+        df.loc[len(df)] = [filepath, accepted]
+
+
+def save_screening_results(df: pd.DataFrame, dir: Path):
+    data_loading.backup_existing(dir, SAVE_NAME)
+    df = df.copy()
+    df['filepath'] = df['filepath'].apply(lambda path: path.name)
+    df.to_csv(dir / SAVE_NAME, index=False)
 
 
 def sort_curves_by_distance(measurements: list[Measurement], ideal_curve_idx: int,
@@ -50,16 +94,14 @@ class Index(object):
 
         # load previously stored scrrening results:
         files = data_loading.get_ibw_paths(self.dir, n_files)
-        if (self.dir / SAVE_NAME).exists():
-            self.df = load_screening_results(self.dir)
+        self.df = load_screening_results(self.dir)
+        if not self.df.empty:
             self.n_accepted = len(self.df[self.df['accept']])
             self.target += self.n_accepted
             if not revise:
                 files = list(set(files) - set(self.df.filepath))
-        else:
-            self.df = pd.DataFrame(columns=['filepath', 'accept'])
         measurements, calib_params = data_loading.load_data(files=files)
-        self.measurements = preprocessing.preprocess(measurements, calib_params)
+        self.measurements, _ = preprocessing.preprocess(measurements, calib_params)
         self.n_screen = len(self.measurements)
         print(f'> Loaded {self.n_screen} measurement(s) to screen.')
         print(f'> Additionally, {len(self.df)} already screened results with {self.n_accepted} accepted measurements have been found on disk.')
@@ -129,10 +171,7 @@ class Index(object):
         return n_done, n_remaining
     
     def store_result(self, accepted: bool):
-        if self.filepath in self.df.filepath.values:
-            self.df.loc[self.df.filepath == self.filepath, 'accept'] = accepted
-        else:
-            self.df.loc[len(self.df)] = [self.filepath, accepted]
+        write_to_df(self.df, self.filepath, accepted)
 
     def next(self, event):
         """ accept """
@@ -147,7 +186,7 @@ class Index(object):
     
     def on_close(self, event):
         print(f'Saved screening results to {self.dir / SAVE_NAME}')
-        self.df.to_csv(self.dir / SAVE_NAME, index=False)
+        save_screening_results(self.df, self.dir)
 
 
 def gui_select_experiments(data_dir: str, target: int = 100, n_files: int = -1, revise: bool = False):

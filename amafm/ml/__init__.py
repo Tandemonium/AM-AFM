@@ -356,8 +356,7 @@ def load_model(model_dir: str, model_name: str):
 
 
 def predict(experiments_dir: str|Path, measurements_raw: list[Measurement]|None = None, calib_params: dict[str, float]|None = None, 
-            model_path: str='models/SVM.joblib', 
-            far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
+            model_path: str='models/SVM.joblib', far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
     """
     Classify measurements using a pre-trained model and return accepted instances of 
     unpreprocessed measurements.

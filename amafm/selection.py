@@ -20,7 +20,7 @@ SAVE_NAME = 'screened_files.csv'
 def load_screening_results(dir: Path) -> pd.DataFrame:
     try:
         return pd.read_csv(dir / SAVE_NAME, converters={'filepath': lambda fp: Path(dir, fp).resolve()})
-    except:
+    except FileNotFoundError:
         return pd.DataFrame(columns=['filepath', 'accept'])
 
 
@@ -84,7 +84,8 @@ def sort_curves_by_distance(measurements: list[Measurement], ideal_curve_idx: in
 class Index(object):
     COLORS = [['tab:blue', 'tab:red'], ['tab:green', 'tab:pink']]
 
-    def __init__(self, data_dir: str, axs, target: int = 100, n_files: int = -1, revise: bool = False):
+    def __init__(self, data_dir: str, axs, target: int = 100, n_files: int = -1, revise: bool = False,
+                 ):
         super().__init__()
         self.axs = axs
         self.dir = Path(data_dir).resolve()
@@ -96,10 +97,13 @@ class Index(object):
         files = data_loading.get_ibw_paths(self.dir, n_files)
         self.df = load_screening_results(self.dir)
         if not self.df.empty:
-            self.n_accepted = len(self.df[self.df['accept']])
-            self.target += self.n_accepted
             if not revise:
+                self.n_accepted = len(self.df[self.df['accept']])
                 files = list(set(files) - set(self.df.filepath))
+                if self.n_accepted >= self.target and not revise:
+                    print(f'> {self.n_accepted} accepted measurements already found in `{SAVE_NAME}`, closing the application.'
+                        'Set the -t argument accordingly if you want to select more curves.')
+                    return
         measurements, calib_params = data_loading.load_data(files=files)
         self.measurements, _ = preprocessing.preprocess(measurements, calib_params)
         self.n_screen = len(self.measurements)
@@ -107,7 +111,7 @@ class Index(object):
         print(f'> Additionally, {len(self.df)} already screened results with {self.n_accepted} accepted measurements have been found on disk.')
 
     def update_view(self, setup: bool = False):
-        if len(self.df) >= self.n_screen or self.n_accepted >= self.target:
+        if self.n_accepted >= self.target or len(self.df) >= self.n_screen:
             plt.close()
         else:
             measurement = self.measurements[0]
@@ -185,7 +189,7 @@ class Index(object):
         self.update_view()
     
     def on_close(self, event):
-        print(f'Saved screening results to {self.dir / SAVE_NAME}')
+        print(f'> Saved screening results to {self.dir / SAVE_NAME}')
         save_screening_results(self.df, self.dir)
 
 

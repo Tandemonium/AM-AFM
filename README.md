@@ -14,7 +14,7 @@ pip install -r setup/requirements.txt
 ## Command line tools
 ### select_experiments.py
 ```shell
-usage: select_experiments.py [-h] [-t TARGET] [-n N_FILES] [-r REVISE] data_dir
+usage: python select_experiments.py data_dir [-h] [-t TARGET] [-n N_FILES] [-r REVISE] 
 
 Open a GUI to screen curves and accept or reject measurements.  
 The classification of the measurements is saved to `screened_files.csv` 
@@ -26,20 +26,19 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -t TARGET, --target TARGET
-                        Target number of accepted curves (default: 100).
+                        Target number of acceptable curves (default: 100).
   -n N_FILES, --n_files N_FILES
                         Number of unseen files to load and preprocess 
                         (default: -1, meaning all files).
   -r REVISE, --revise REVISE
-                        If a previously saved `screened_files.csv` exists and this is `True`, 
-                        these files are also included to revisit the labels, 
-                        if it is `False` those files are skipped
-                        (default: False).
+                        If a previously saved `screened_files.csv` exists and this is given, 
+                        these files are shown again to revisit the labels, 
+                        otherwise they are skipped.
 ```
 
 ### force_tool.py
 ```shell
-usage: force_tool.py [-h] [-t TARGET] [-f FORCE_STEP_SIZE] [-m MODEL_PATH] [-s {phase,amp}] [-d {in,out}] experiments_dir
+usage: python force_tool.py experiments_dir [-h] [-t TARGET] [-f FORCE_STEP_SIZE] [-m MODEL_PATH] [-s {phase,amp}] [-d {in,out}]
 
 Load files of an experiment, select acceptable measurements, preprocess, average and compute force curve. Resulting average curves and force curve are saved to the experiments-directory.
 
@@ -54,8 +53,6 @@ options:
                         Step size for averaging in the force calculation (default: 10).
   -m MODEL_PATH, --model_path MODEL_PATH
                         Path to the machine learning model for classification (default: `models/SVM.joblib`).
-  -s {phase,amp}, --signal_type {phase,amp}
-                        Type of measured signal to use for classification, either `phase` or `amp` (default: `phase`).
   -d {in,out}, --direction {in,out}
                         Direction of the probe, either `in` or `out` (default: `out`).
 ```

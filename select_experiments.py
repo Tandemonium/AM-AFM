@@ -29,6 +29,5 @@ if __name__ == '__main__':
     data_dir = args.data_dir
     target = args.target
     n_files = args.n_files
-    print(args.revise)
     revise = bool(args.revise)
     selection.gui_select_experiments(data_dir, target, n_files, revise)

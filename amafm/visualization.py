@@ -176,7 +176,7 @@ def plot_compare_feature_xalign(measurements: list[Measurement],
             axs[i].plot(zshift, s, label=labels[i], color=get_color(i))
             axs[i].vlines(0, smin, smax, color='k', linestyle='--')
             axs[i].set_xlim(zmin, zmax)
-            axs[i].legend()
+            axs[i].legend(loc='lower right')
         fig.tight_layout()
         plt.show()
 

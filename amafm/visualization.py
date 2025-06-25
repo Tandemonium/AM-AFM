@@ -16,7 +16,7 @@ def get_color(i: int) -> str:
     return colors[i % len(colors)]
 
 
-def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: float = 0.1):
+def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: float = 0.1, figsize: tuple[int, int] = (10, 5)):
     """
     Plot all measurements in a 2x2 grid for approach and retract for phase and amplitude curves.
 
@@ -29,8 +29,10 @@ def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: 
     alpha : float, optional
         Sets the opacity of the plotted curves. 
         When plotting many measurements, a lower `alpha` shows the density of curves better, by default 0.1
+    figsize : tuple[int, int], optional
+        Size of the figure, by default (10, 5)
     """
-    fig, axs = plt.subplots(2, 2, figsize=(10, 6))
+    fig, axs = plt.subplots(2, 2, figsize=figsize)
     labels = ['phase approach', 'phase retract', 'amplitude approach', 'amplitude retract']
     for i, (signal_type, z_type) in enumerate(zip(Measurement.signal_types(), 
                                                   Measurement.z_types() * 2)):
@@ -40,8 +42,9 @@ def plot_all(measurements: list[Measurement], single_color: bool = True, alpha: 
             if single_color:
                 ax.plot(z, y, color='tab:blue', alpha=alpha)
             else:
-                ax.plot(z, y)
+                ax.plot(z, y, alpha=alpha)
         ax.set_title(labels[i])
+    plt.tight_layout()
     plt.show()
 
 

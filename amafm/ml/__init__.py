@@ -356,7 +356,7 @@ def load_model(model_dir: str, model_name: str):
 
 
 def predict(experiments_dir: str|Path, measurements_raw: list[Measurement]|None = None, calib_params: dict[str, float]|None = None, 
-            model_path: str='models/SVM.joblib', far_probe_avrg_tol: int = 100) -> tuple[list[Measurement], dict[str, float]]:
+            model_path: str='models/SVM.joblib', far_probe_avrg_tol: int = 100, save: bool=True) -> tuple[list[Measurement], dict[str, float]]:
     """
     Classify measurements using a pre-trained model and return accepted instances of 
     unpreprocessed measurements.
@@ -364,16 +364,22 @@ def predict(experiments_dir: str|Path, measurements_raw: list[Measurement]|None 
     Parameters
     ----------
     experiments_dir : str | Path
-        Store results here. If `measurements` is not given, also load experiments from here, 
-        by default `None`
-    measurements : list[Measurement] | None, optional
+        Store results here. If `measurements_raw` is not given, also load experiments from here, 
+        by default `None`.
+    measurements_raw : list[Measurement] | None, optional
         Raw unprocessed measurements to classify. If `None` load from `experiments_dir`, 
-        by default `None`
+        by default `None`.
+    calib_params : dict[str, float] | None, optional
+        Calibration parameters for preprocessing. Required if `measurements_raw` is given,
+        by default `None`.
     model_path : str, optional
-        Path to a pre-trained model, by default 'models/SVM.joblib'
+        Path to a pre-trained model, by default 'models/SVM.joblib'.
     far_probe_avrg_tol : int, optional
         Tolerance for averaging the far probe signal, only used if loading measurements from directory, 
-        by default 100
+        by default 100.
+    save : bool, optional
+        If `True`, save the classification results to the file `screened_files.csv` inside the `experiments_dir` 
+        (existing files will be renamed), by default `True`.
 
     Returns
     -------
@@ -406,9 +412,12 @@ def predict(experiments_dir: str|Path, measurements_raw: list[Measurement]|None 
         selection.write_to_df(screening_df, m.file_path, p)
         if p:
             accepted_measurements.append(m)
-    selection.save_screening_results(screening_df, experiments_dir)
     print(f'> Found {len(accepted_measurements)} acceptable measurements out of {len(measurements_raw)}.')
-    print(f'> Saved classification results to `{experiments_dir / selection.SAVE_NAME}`.')
+    
+    if save:
+        selection.save_screening_results(screening_df, experiments_dir)
+        print(f'> Saved classification results to `{experiments_dir / selection.SAVE_NAME}`.')
+    
     return accepted_measurements, calib_params
 
 

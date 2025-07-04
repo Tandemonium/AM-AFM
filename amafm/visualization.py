@@ -136,7 +136,7 @@ def compare_smoothing(measurement_raw: Measurement, smoothing_methods: list[dict
 
 def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str, float], 
                         signal_type: Literal['amp', 'phase'] = 'phase', direction: Literal['in', 'out'] = 'out', 
-                        alpha: float = 0.5):
+                        figsize: tuple[int, int] = (8, 6), alpha: float = 0.5):
     """Plot comparison of y-aligned curve with original curve."""
     st, zt = f'{signal_type}_{direction}', f'z_{direction}'
     signal = [m[st] for m in measurements]
@@ -144,7 +144,7 @@ def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str,
     aligned_med = [preprocessing.y_align(s, far_param, 'median') for s in signal]
     aligned_avg = [preprocessing.y_align(s, far_param, 'mean') for s in signal]
 
-    fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+    fig, axs = plt.subplots(2, 1, figsize=figsize)
     for i in range(len(measurements)):
         for j, aligned in enumerate([aligned_med[i], aligned_avg[i]]):
             label = 'original' if i == 0 else None
@@ -154,8 +154,11 @@ def plot_compare_yalign(measurements: list[Measurement], calib_params: dict[str,
         for j, aligned in enumerate([aligned_med[i], aligned_avg[i]]):
             label = ('y-aligned (median)' if j == 0 else 'y-aligned (mean)') if i == 0 else None
             axs[j].plot(measurements[i][zt], aligned, color='r', alpha=alpha, label=label)
-    axs[0].legend()
-    axs[1].legend()
+    leg0 = axs[0].legend()
+    leg1 = axs[1].legend()
+    for lh in zip(leg0.legend_handles, leg1.legend_handles):
+        lh[0].set_alpha(1.0)
+        lh[1].set_alpha(1.0)
     fig.tight_layout()
     plt.show()
 

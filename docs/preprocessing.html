@@ -554,10 +554,10 @@
                                 <dd>The function which applys smoothing on each curve. See
                                     <code><a title="amafm.denoise" href="denoise.html">amafm.denoise</a></code>-module
                                     for available functions<br>
-                                    by default denoise.savgol</dd>
+                                    by default denoise.gauss</dd>
                                 <dt><strong><code>smooth_kwargs</code></strong> :&ensp;<code>_type_</code>, optional
                                 </dt>
-                                <dd>Keyword arguments to pass to the smoothing-function, by default {'w': 50, 'p': 3}
+                                <dd>Keyword arguments to pass to the smoothing-function, by default {'s': 4}
                                 </dd>
                                 <dt><strong><code>reduce_length</code></strong> :&ensp;<code>int</code>, optional</dt>
                                 <dd>Reduce curves to a given length by interpolating using cubic bsplines. Set &gt;=1 to

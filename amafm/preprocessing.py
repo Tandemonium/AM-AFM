@@ -118,8 +118,8 @@ class MeasurementScaler:
 
 def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
                scale: bool = False, inverse_scale: bool = True, scale_per_measurement: bool = False, smooth: bool = True, 
-               smooth_func: Callable[..., np.ndarray|tuple[np.ndarray]] = denoise.savgol, 
-               smooth_kwargs: dict[str, Any] = {'w': 20, 'p': 3}, reduce_length: int = 512,
+               smooth_func: Callable[..., np.ndarray|tuple[np.ndarray]] = denoise.gauss, 
+               smooth_kwargs: dict[str, Any] = {'s': 4}, reduce_length: int = 512,
                yalign: Literal['mean', 'median']|None = 'median', 
                xalign: Literal['increase', 'decrease', 'extrema', 'maximum', 'minimum', 'sym', 'rj']|None = 'maximum', 
                xalign_guide_type: Literal['amp', 'phase'] = 'phase', 
@@ -146,9 +146,9 @@ def preprocess(measurements: list[Measurement], calib_params: dict[str, float],
         Set to `True` to smooth amplitude- and phase-data to reduce noise, by default True
     smooth_func : Callable[..., np.ndarray | tuple[np.ndarray]], optional
         The function which applys smoothing on each curve. See `amafm.denoise`-module for available functions  
-        by default denoise.savgol
+        by default denoise.gauss
     smooth_kwargs : _type_, optional
-        Keyword arguments to pass to the smoothing-function, by default {'w': 50, 'p': 3}
+        Keyword arguments to pass to the smoothing-function, by default {'s': 4}
     reduce_length : int, optional
         Reduce curves to a given length by interpolating using cubic bsplines. Set >=1 to apply, by default 512
     yalign : Literal[&#39;mean&#39;, &#39;median&#39;] | None, optional
